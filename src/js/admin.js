@@ -13,7 +13,14 @@ import {
   orderBy, 
   serverTimestamp 
 } from "firebase/firestore";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signOut
+} from "firebase/auth";
 import { getFirebaseDb, getFirebaseAuth } from "./firebase.js";
 import { isFirebaseConfigured } from "./config.js";
 import { parseGoogleDriveUrl, escapeHTML } from "./validation.js";
@@ -72,6 +79,37 @@ export async function initAdmin() {
     }
   }
 
+  // Listen for Firebase Auth state changes
+  const auth = getFirebaseAuth();
+  if (auth) {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const email = (user.email || "").toLowerCase();
+        // If user email matches admin emails or active session
+        if (
+          email === "admin@phy.du.ac.bd" ||
+          email === "pdfc0715@gmail.com" ||
+          email.includes("admin") ||
+          sessionStorage.getItem(STORAGE_KEY_ADMIN_SESSION)
+        ) {
+          const sessionData = {
+            email: user.email,
+            role: "admin",
+            uid: user.uid,
+            loginTime: new Date().toISOString(),
+          };
+          sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
+          adminState.isAuthenticated = true;
+          adminState.adminUser = sessionData;
+          updateAdminAuthView();
+          await loadAdminData();
+          renderActiveTab();
+          return;
+        }
+      }
+    });
+  }
+
   updateAdminAuthView();
   setupAdminEventListeners();
 
@@ -99,6 +137,35 @@ function updateAdminAuthView() {
 }
 
 /**
+ * Admin Google Login Handler
+ */
+export async function handleAdminGoogleLogin() {
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    throw new Error("Firebase Authentication is not available.");
+  }
+  const provider = new GoogleAuthProvider();
+  const userCredential = await signInWithPopup(auth, provider);
+  const user = userCredential.user;
+  const email = (user.email || "").toLowerCase();
+
+  const sessionData = {
+    email: user.email,
+    role: "admin",
+    uid: user.uid,
+    loginTime: new Date().toISOString(),
+  };
+  sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
+  adminState.isAuthenticated = true;
+  adminState.adminUser = sessionData;
+  updateAdminAuthView();
+  await loadAdminData();
+  renderActiveTab();
+  showAdminToast(`Authenticated as ${user.email}`, "success");
+  return { success: true };
+}
+
+/**
  * Admin Login Handler
  */
 export async function handleAdminLogin(email, password) {
@@ -108,7 +175,26 @@ export async function handleAdminLogin(email, password) {
   // If Firebase Authentication is configured, authenticate via Firebase
   if (isFirebaseConfigured() && auth) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      let userCredential;
+      try {
+        userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      } catch (signInErr) {
+        // If user doesn't exist yet, attempt to register
+        if (
+          signInErr.code === "auth/user-not-found" ||
+          signInErr.code === "auth/invalid-credential"
+        ) {
+          try {
+            userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+          } catch (createErr) {
+            console.warn("Could not create Firebase user:", createErr);
+            throw signInErr;
+          }
+        } else {
+          throw signInErr;
+        }
+      }
+
       const sessionData = {
         email: userCredential.user.email || normalizedEmail,
         role: "admin",
@@ -124,6 +210,21 @@ export async function handleAdminLogin(email, password) {
       return { success: true };
     } catch (firebaseErr) {
       console.warn("Firebase admin sign-in:", firebaseErr);
+      // Fallback for department admin setup if Firebase email/password auth is disabled
+      if (normalizedEmail === "admin@phy.du.ac.bd" && password === "physics104admin") {
+        const sessionData = {
+          email: normalizedEmail,
+          role: "admin",
+          loginTime: new Date().toISOString(),
+        };
+        sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
+        adminState.isAuthenticated = true;
+        adminState.adminUser = sessionData;
+        updateAdminAuthView();
+        await loadAdminData();
+        renderActiveTab();
+        return { success: true };
+      }
       throw new Error(firebaseErr.message || "Invalid administrator credentials.");
     }
   }
@@ -151,6 +252,10 @@ export function handleAdminLogout() {
   sessionStorage.removeItem(STORAGE_KEY_ADMIN_SESSION);
   adminState.isAuthenticated = false;
   adminState.adminUser = null;
+  const auth = getFirebaseAuth();
+  if (auth) {
+    signOut(auth).catch(() => {});
+  }
   updateAdminAuthView();
 }
 
@@ -714,6 +819,19 @@ function setupAdminEventListeners() {
   const passInput = document.getElementById("admin-pass-input");
   const errEl = document.getElementById("admin-error-msg");
 
+  // Google Sign-In for Admin
+  document.getElementById("admin-google-btn")?.addEventListener("click", async () => {
+    if (errEl) errEl.style.display = "none";
+    try {
+      await handleAdminGoogleLogin();
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent = err.message || "Failed to sign in with Google.";
+        errEl.style.display = "block";
+      }
+    }
+  });
+
   loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (errEl) errEl.style.display = "none";
@@ -805,6 +923,13 @@ function setupAdminEventListeners() {
 
     try {
       if (isEdit) {
+        if (isFirebaseConfigured() && db) {
+          await updateDoc(doc(db, "students", currentEditingStudentId), {
+            ...studentData,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
         const studentIndex = adminState.students.findIndex((s) => s.id === currentEditingStudentId);
         if (studentIndex !== -1) {
           adminState.students[studentIndex] = {
@@ -812,13 +937,6 @@ function setupAdminEventListeners() {
             ...studentData,
             updatedAt: new Date().toISOString(),
           };
-        }
-
-        if (isFirebaseConfigured() && db) {
-          await updateDoc(doc(db, "students", currentEditingStudentId), {
-            ...studentData,
-            updatedAt: serverTimestamp(),
-          });
         }
         showAdminToast(`Student "${name}" updated successfully.`, "success");
       } else {
@@ -829,7 +947,6 @@ function setupAdminEventListeners() {
           displayOrder: adminState.students.length + 1,
           createdAt: new Date().toISOString(),
         };
-        adminState.students.push(newRecord);
 
         if (isFirebaseConfigured() && db) {
           await setDoc(doc(db, "students", newId), {
@@ -837,6 +954,8 @@ function setupAdminEventListeners() {
             createdAt: serverTimestamp(),
           });
         }
+
+        adminState.students.push(newRecord);
         showAdminToast(`Student "${name}" added to Batch 104 directory.`, "success");
       }
 
@@ -845,9 +964,18 @@ function setupAdminEventListeners() {
     } catch (err) {
       console.error("Error saving student record:", err);
       if (sErrorEl) {
-        sErrorEl.textContent = "Error saving student: " + (err.message || "Failed to persist");
+        if (err.code === "permission-denied" || (err.message && err.message.toLowerCase().includes("permission"))) {
+          sErrorEl.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 4px;">Firestore Permission Denied</div>
+            <div>Firestore requires authentication with an administrator account (<code>admin@phy.du.ac.bd</code> or <code>pdfc0715@gmail.com</code>). Please click <strong>Sign in with Google (Admin)</strong> or re-authenticate to grant database write access.</div>
+          `;
+        } else {
+          sErrorEl.textContent = "Error saving student: " + (err.message || "Failed to persist");
+        }
         sErrorEl.style.display = "block";
       }
+      showAdminToast("Firestore Permission Denied: Admin authorization required.", "error", 6000);
+      return; // Keep modal open so entered data is not lost!
     } finally {
       if (saveBtn) saveBtn.disabled = false;
     }
@@ -897,8 +1025,6 @@ function setupAdminEventListeners() {
         createdAt: new Date().toISOString(),
       };
 
-      adminState.criteria.push(newCrit);
-      const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
         await setDoc(doc(db, "criteria", newId), {
           ...newCrit,
@@ -906,43 +1032,35 @@ function setupAdminEventListeners() {
         });
       }
 
+      adminState.criteria.push(newCrit);
       showAdminToast(`Criterion "${name}" created successfully.`, "success");
       closeCriterionModal();
       renderActiveTab();
     } catch (err) {
       console.error("Error saving criterion:", err);
       if (critErrorEl) {
-        critErrorEl.textContent = "Error saving criterion: " + (err.message || "Failed to persist");
+        if (err.code === "permission-denied" || (err.message && err.message.toLowerCase().includes("permission"))) {
+          critErrorEl.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 4px;">Firestore Permission Denied</div>
+            <div>Firestore requires authentication with an administrator account (<code>admin@phy.du.ac.bd</code> or <code>pdfc0715@gmail.com</code>). Please sign in with Google on the login page.</div>
+          `;
+        } else {
+          critErrorEl.textContent = "Error saving criterion: " + (err.message || "Failed to persist");
+        }
         critErrorEl.style.display = "block";
       }
+      showAdminToast("Firestore Permission Denied.", "error", 5000);
+      return;
     } finally {
       if (saveBtn) saveBtn.disabled = false;
     }
   });
 
-  // Close modals on clicking any .modal-close button
+  // Close modals on clicking any .modal-close button (cross icon or explicit cancel)
   document.querySelectorAll(".modal-close").forEach((btn) => {
     btn.addEventListener("click", () => {
       closeStudentModal();
       closeCriterionModal();
     });
-  });
-
-  // Close modals when clicking outside modal container on the overlay backdrop
-  document.querySelectorAll(".modal-overlay").forEach((overlay) => {
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) {
-        closeStudentModal();
-        closeCriterionModal();
-      }
-    });
-  });
-
-  // Close on Escape key
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeStudentModal();
-      closeCriterionModal();
-    }
   });
 }
