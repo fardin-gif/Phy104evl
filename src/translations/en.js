@@ -1,1 +1,88 @@
-
+/**
+ * DU Physics 104 - Translation & UI Strings Architecture (English)
+ * Centralized user-facing strings allowing future localization (e.g. Bangla)
+ */
+export const strings = {
+  app: {
+    name: "104 Peer Review",
+    identity: "104",
+    department: "PHYSICS · UNIVERSITY OF DHAKA",
+    subtitle: "Peer Review",
+    tagline: "How does the batch see itself?",
+  },
+  auth: {
+    title: "Student Verification",
+    subtitle: "Private peer review system for Department of Physics, University of Dhaka.",
+    emailLabel: "University Physics Email",
+    emailPlaceholder: "s-2024xxxxxx@phy.du.ac.bd",
+    emailHelp: "Format: s- followed by 10 digits @phy.du.ac.bd",
+    sendLinkBtn: "Send Sign-In Link",
+    sendingLink: "Sending verification email...",
+    linkSentTitle: "Check Your University Email",
+    linkSentDesc: "A secure passwordless sign-in link has been sent to your university inbox.",
+    completingSignIn: "Verifying sign-in link with Firebase...",
+    invalidEmailError: "Invalid email format. Must match s- followed by 10 digits @phy.du.ac.bd",
+    signOutBtn: "Sign Out",
+  },
+  stats: {
+    students: "Batch Students",
+    ratings: "Ratings Recorded",
+    reviews: "Anonymous Reviews",
+    participation: "Participation Rate",
+  },
+  directory: {
+    searchPlaceholder: "Search students by name or roll...",
+    filterAll: "All Students",
+    filterRated: "Rated",
+    filterUnrated: "Unrated",
+    viewProfile: "View Profile",
+    noResults: "No students match your search.",
+  },
+  profile: {
+    overallRating: "Overall Peer Rating",
+    notRatedYet: "Not rated yet",
+    totalRatings: "ratings",
+    criteriaHeading: "Evaluation Dimensions",
+    reviewsHeading: "Anonymous Peer Reviews",
+    noReviewsYet: "No anonymous reviews yet.",
+    rateStudentBtn: "Rate this student",
+    alreadyRatedBadge: "You have already rated this student",
+    viewOnlyNotice: "Rating is reserved for verified 2024 batch students.",
+  },
+  ratingModal: {
+    title: "Peer Evaluation",
+    instructions: "All criteria are mandatory. Scores range from -1 to +4.",
+    reviewLabel: "Optional Anonymous Review",
+    reviewPlaceholder: "Write constructive, anonymous feedback (max 500 characters)...",
+    submitBtn: "Submit Anonymous Rating",
+    submittingBtn: "Submitting...",
+    ratingRecorded: "Rating recorded. Your response has been added anonymously. This rating cannot be edited.",
+    incompleteCriteria: "Please select a score for every active criterion.",
+  },
+  rankings: {
+    title: "Batch Rankings",
+    subtitle: "Peer perception measurement sorted by overall arithmetic score.",
+    rankHeader: "Rank",
+    studentHeader: "Student",
+    overallHeader: "Overall Score",
+    ratingsHeader: "Ratings Count",
+    emptyRankings: "No ratings recorded yet to calculate rankings.",
+  },
+  account: {
+    title: "Student Account",
+    emailLabel: "Verified Email",
+    batchLabel: "Batch Year",
+    statusLabel: "Permissions Status",
+    batch2024Status: "2024 Batch Member (Full Rating & Review Privileges)",
+    departmentStatus: "Physics Department (View-Only Privileges)",
+    devicesTitle: "Active Device Sessions",
+    devicesLimitNotice: "Maximum 3 active devices allowed per account.",
+    revokeDeviceBtn: "Revoke Session",
+    maxDevicesReached: "You have reached the maximum of 3 active devices. Please revoke an existing session to proceed.",
+  },
+  toasts: {
+    genericError: "An unexpected error occurred. Please try again.",
+    linkExpired: "This sign-in link is invalid or has expired. Please request a new sign-in email.",
+    deviceRevoked: "Device session has been successfully revoked.",
+  }
+};
