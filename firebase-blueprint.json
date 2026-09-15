@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Administrator account credentials and permissions",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "description": "Admin email address" },
+        "pass": { "type": "string", "description": "Protected secure salted password hash" },
+        "role": { "type": "string", "enum": ["admin", "superadmin"], "description": "Administrator privilege level" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "pass", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student in the Physics Department 104 batch directory for peer evaluation",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full student name" },
+        "roll": { "type": "string", "description": "Student university roll number" },
+        "imageUrl": { "type": "string", "description": "Serving image URL or Google Drive preview URL" },
+        "imageSource": { "type": "string", "description": "Original raw image URL (e.g., Google Drive sharing link)" },
+        "imageFileId": { "type": "string", "description": "Extracted Google Drive file ID if applicable" },
+        "active": { "type": "boolean", "description": "Whether the student is active or deactivated" },
+        "displayOrder": { "type": "number", "description": "Optional custom display sorting priority" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "roll", "active"]
+    },
+    "Criterion": {
+      "title": "Criterion",
+      "description": "Peer rating evaluation dimension configured by administrators",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Criterion title (e.g., Communication, Helpfulness, Leadership)" },
+        "minScore": { "type": "number", "description": "Minimum allowed score (default -1)" },
+        "maxScore": { "type": "number", "description": "Maximum allowed score (default 4)" },
+        "active": { "type": "boolean", "description": "Whether this criterion is currently included in rating forms" },
+        "displayOrder": { "type": "number", "description": "Display order in the rating sheet" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "minScore", "maxScore", "active", "displayOrder"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Authenticated student user record verified via DU Physics email link",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "Department email (s-xxxxxxxxxx@phy.du.ac.bd)" },
+        "batch": { "type": "string", "description": "Extracted batch year (e.g., 2024)" },
+        "department": { "type": "string", "description": "Department name (Physics)" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "suspended"], "description": "Account status" }
+      },
+      "required": ["uid", "email", "department"]
+    },
+    "DeviceSession": {
+      "title": "DeviceSession",
+      "description": "Active session token enforcing the max 3 concurrent devices limit",
+      "type": "object",
+      "properties": {
+        "deviceId": { "type": "string", "description": "Unique client hardware/browser fingerprint identifier" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastSeenAt": { "type": "string", "format": "date-time" },
+        "userAgent": { "type": "string", "description": "Browser user agent summary" },
+        "revoked": { "type": "boolean", "description": "Whether this device session has been revoked" },
+        "status": { "type": "string", "enum": ["active", "revoked"] }
+      },
+      "required": ["deviceId", "revoked"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "description": "Single non-editable peer rating submitted by an authenticated 2024 batch student",
+      "type": "object",
+      "properties": {
+        "ratingId": { "type": "string", "description": "Deterministic ID: {reviewerUid}_{targetStudentId}" },
+        "reviewerUid": { "type": "string", "description": "Protected private reviewer UID" },
+        "targetStudentId": { "type": "string", "description": "Target student document ID" },
+        "scores": { "type": "object", "description": "Key-value pair of criterionId to integer score" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ratingId", "reviewerUid", "targetStudentId", "scores"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Optional anonymous qualitative feedback associated with a rating",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string", "description": "Unique review identifier" },
+        "ratingId": { "type": "string", "description": "Deterministic parent rating identifier" },
+        "targetStudentId": { "type": "string", "description": "Target student document ID" },
+        "reviewText": { "type": "string", "maxLength": 500, "description": "Written review text (max 500 characters)" },
+        "visible": { "type": "boolean", "description": "Public visibility flag controlled by moderation" },
+        "moderationStatus": { "type": "string", "enum": ["visible", "hidden", "flagged"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reviewId", "ratingId", "targetStudentId", "reviewText", "visible"]
+    },
+    "Aggregate": {
+      "title": "Aggregate",
+      "description": "Precomputed authoritative summary statistics for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "Target student ID" },
+        "overallAverage": { "type": "number", "description": "Arithmetic mean of all criterion scores across all ratings" },
+        "ratingCount": { "type": "number", "description": "Total number of submitted ratings" },
+        "reviewCount": { "type": "number", "description": "Total number of visible reviews" },
+        "criterionAverages": { "type": "object", "description": "Average score per active criterion ID" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "overallAverage", "ratingCount"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Protected administrative audit log for traceability and security",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "description": "Administrative event description" },
+        "adminId": { "type": "string", "description": "Admin UID or email" },
+        "targetId": { "type": "string", "description": "Affected entity identifier" },
+        "details": { "type": "object", "description": "Structured event payload" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Protected collection of administrator credentials and role assignments"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Physics 104 batch student directory documents"
+    },
+    "/criteria/{criterionId}": {
+      "schema": { "$ref": "#/entities/Criterion" },
+      "description": "Rating dimensions configured by admins"
+    },
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Department verified user profiles"
+    },
+    "/users/{uid}/deviceSessions/{deviceId}": {
+      "schema": { "$ref": "#/entities/DeviceSession" },
+      "description": "Per-user device session tracker enforcing 3 concurrent devices limit"
+    },
+    "/ratings/{ratingId}": {
+      "schema": { "$ref": "#/entities/Rating" },
+      "description": "Protected rating documents. Anonymous to normal clients."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Anonymous reviews for students. Filtered by visible: true for public students."
+    },
+    "/aggregates/{studentId}": {
+      "schema": { "$ref": "#/entities/Aggregate" },
+      "description": "Authoritative cached metric computations per student"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Protected audit log entries"
+    }
+  }
+}

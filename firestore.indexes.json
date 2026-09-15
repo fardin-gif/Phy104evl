@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetStudentId", "order": "ASCENDING" },
+        { "fieldPath": "visible", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "students",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "displayOrder", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "criteria",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "displayOrder", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

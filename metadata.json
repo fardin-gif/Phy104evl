@@ -1,0 +1,6 @@
+{
+  "name": "104 Peer Review",
+  "description": "Private peer review and academic evaluation system for the Department of Physics, University of Dhaka (Batch 104).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // By default, Google Drive links are used for student portraits.
+    // If Firebase Storage is utilized, student portraits can be read by verified students.
+    match /students/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.email.matches('^s-\\d{10}@phy\\.du\\.ac\\.bd$');
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    match /{allPaths=**} {
+      allow read, write: false;
+    }
+  }
+}
