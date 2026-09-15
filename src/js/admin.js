@@ -4,6 +4,7 @@
 import { 
   collection, 
   doc, 
+  getDoc,
   getDocs, 
   setDoc, 
   updateDoc, 
@@ -13,15 +14,7 @@ import {
   orderBy, 
   serverTimestamp 
 } from "firebase/firestore";
-import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signOut
-} from "firebase/auth";
-import { getFirebaseDb, getFirebaseAuth } from "./firebase.js";
+import { getFirebaseDb } from "./firebase.js";
 import { isFirebaseConfigured } from "./config.js";
 import { parseGoogleDriveUrl, escapeHTML } from "./validation.js";
 import { exportToCSV, applyTheme, formatScore } from "./utils.js";
@@ -79,37 +72,6 @@ export async function initAdmin() {
     }
   }
 
-  // Listen for Firebase Auth state changes
-  const auth = getFirebaseAuth();
-  if (auth) {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const email = (user.email || "").toLowerCase();
-        // If user email matches admin emails or active session
-        if (
-          email === "admin@phy.du.ac.bd" ||
-          email === "pdfc0715@gmail.com" ||
-          email.includes("admin") ||
-          sessionStorage.getItem(STORAGE_KEY_ADMIN_SESSION)
-        ) {
-          const sessionData = {
-            email: user.email,
-            role: "admin",
-            uid: user.uid,
-            loginTime: new Date().toISOString(),
-          };
-          sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
-          adminState.isAuthenticated = true;
-          adminState.adminUser = sessionData;
-          updateAdminAuthView();
-          await loadAdminData();
-          renderActiveTab();
-          return;
-        }
-      }
-    });
-  }
-
   updateAdminAuthView();
   setupAdminEventListeners();
 
@@ -137,68 +99,48 @@ function updateAdminAuthView() {
 }
 
 /**
- * Admin Google Login Handler
- */
-export async function handleAdminGoogleLogin() {
-  const auth = getFirebaseAuth();
-  if (!auth) {
-    throw new Error("Firebase Authentication is not available.");
-  }
-  const provider = new GoogleAuthProvider();
-  const userCredential = await signInWithPopup(auth, provider);
-  const user = userCredential.user;
-  const email = (user.email || "").toLowerCase();
-
-  const sessionData = {
-    email: user.email,
-    role: "admin",
-    uid: user.uid,
-    loginTime: new Date().toISOString(),
-  };
-  sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
-  adminState.isAuthenticated = true;
-  adminState.adminUser = sessionData;
-  updateAdminAuthView();
-  await loadAdminData();
-  renderActiveTab();
-  showAdminToast(`Authenticated as ${user.email}`, "success");
-  return { success: true };
-}
-
-/**
  * Admin Login Handler
+ * Verifies credentials directly against Firestore collection:
+ * collection ('admins') -> document (emailId) -> field (password)
  */
 export async function handleAdminLogin(email, password) {
-  const normalizedEmail = email.trim().toLowerCase();
-  const auth = getFirebaseAuth();
+  const cleanEmail = (email || "").trim();
+  const normalizedEmail = cleanEmail.toLowerCase();
+  const trimmedPassword = (password || "").trim();
 
-  // If Firebase Authentication is configured, authenticate via Firebase
-  if (isFirebaseConfigured() && auth) {
-    try {
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
-      } catch (signInErr) {
-        // If user doesn't exist yet, attempt to register
-        if (
-          signInErr.code === "auth/user-not-found" ||
-          signInErr.code === "auth/invalid-credential"
-        ) {
-          try {
-            userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-          } catch (createErr) {
-            console.warn("Could not create Firebase user:", createErr);
-            throw signInErr;
-          }
-        } else {
-          throw signInErr;
-        }
+  if (!cleanEmail || !trimmedPassword) {
+    throw new Error("Please enter both administrator email and password.");
+  }
+
+  const db = getFirebaseDb();
+  if (!db) {
+    throw new Error("Firestore database is not initialized. Please verify your Firebase configuration in src/js/config.js.");
+  }
+
+  try {
+    // 1. Query the 'admins' collection with the email as document ID
+    let adminDocSnap = await getDoc(doc(db, "admins", normalizedEmail));
+    if (!adminDocSnap.exists() && cleanEmail !== normalizedEmail) {
+      adminDocSnap = await getDoc(doc(db, "admins", cleanEmail));
+    }
+
+    // If document is found in Firestore 'admins' collection
+    if (adminDocSnap.exists()) {
+      const adminData = adminDocSnap.data() || {};
+      // Check password field (supports 'password', 'pass', or 'value')
+      const storedPassword = adminData.password ?? adminData.pass ?? adminData.value;
+
+      if (storedPassword === undefined || storedPassword === null) {
+        throw new Error(`Admin document "${cleanEmail}" exists in "admins" collection, but is missing a "password" field.`);
+      }
+
+      if (String(storedPassword).trim() !== trimmedPassword) {
+        throw new Error("Incorrect administrator password.");
       }
 
       const sessionData = {
-        email: userCredential.user.email || normalizedEmail,
+        email: cleanEmail,
         role: "admin",
-        uid: userCredential.user.uid,
         loginTime: new Date().toISOString(),
       };
       sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
@@ -207,142 +149,108 @@ export async function handleAdminLogin(email, password) {
       updateAdminAuthView();
       await loadAdminData();
       renderActiveTab();
+      showAdminToast(`Authenticated as ${cleanEmail}`, "success");
       return { success: true };
-    } catch (firebaseErr) {
-      console.warn("Firebase admin sign-in:", firebaseErr);
-      // Fallback for department admin setup if Firebase email/password auth is disabled
-      if (normalizedEmail === "admin@phy.du.ac.bd" && password === "physics104admin") {
-        const sessionData = {
-          email: normalizedEmail,
-          role: "admin",
-          loginTime: new Date().toISOString(),
-        };
-        sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
-        adminState.isAuthenticated = true;
-        adminState.adminUser = sessionData;
-        updateAdminAuthView();
-        await loadAdminData();
-        renderActiveTab();
-        return { success: true };
-      }
-      throw new Error(firebaseErr.message || "Invalid administrator credentials.");
     }
-  }
 
-  // Verification for department admin setup
-  if (normalizedEmail === "admin@phy.du.ac.bd" && password === "physics104admin") {
-    const sessionData = {
-      email: normalizedEmail,
-      role: "admin",
-      loginTime: new Date().toISOString(),
-    };
-    sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
-    adminState.isAuthenticated = true;
-    adminState.adminUser = sessionData;
-    updateAdminAuthView();
-    await loadAdminData();
-    renderActiveTab();
-    return { success: true };
-  }
+    // Default department credential fallback if Firestore 'admins' collection is not yet populated
+    if (normalizedEmail === "admin@phy.du.ac.bd" && trimmedPassword === "physics104admin") {
+      const sessionData = {
+        email: normalizedEmail,
+        role: "admin",
+        loginTime: new Date().toISOString(),
+      };
+      sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, JSON.stringify(sessionData));
+      adminState.isAuthenticated = true;
+      adminState.adminUser = sessionData;
+      updateAdminAuthView();
+      await loadAdminData();
+      renderActiveTab();
+      showAdminToast("Authenticated using default department administrator credentials.", "info");
+      return { success: true };
+    }
 
-  throw new Error("Invalid administrator credentials. Please check your email and password.");
+    throw new Error(`Admin account "${cleanEmail}" not found in Firestore "admins" collection. Please ensure a document with ID "${normalizedEmail}" exists in the "admins" collection with a "password" field.`);
+  } catch (err) {
+    if (err.code === "permission-denied" || (err.message && err.message.toLowerCase().includes("permission"))) {
+      throw new Error("Firestore Permission Denied when checking 'admins' collection. Please update your Firestore security rules to allow reading collection 'admins'.");
+    }
+    throw err;
+  }
 }
 
 export function handleAdminLogout() {
   sessionStorage.removeItem(STORAGE_KEY_ADMIN_SESSION);
   adminState.isAuthenticated = false;
   adminState.adminUser = null;
-  const auth = getFirebaseAuth();
-  if (auth) {
-    signOut(auth).catch(() => {});
-  }
   updateAdminAuthView();
+  showAdminToast("Signed out from administrator panel.", "info");
 }
 
 /**
- * Load all Admin Datasets
+ * Load administrative datasets from Firestore
  */
 export async function loadAdminData() {
   const db = getFirebaseDb();
-
-  // 1. Students (Loaded directly from Firestore)
-  if (isFirebaseConfigured() && db) {
-    try {
-      const snap = await getDocs(collection(db, "students"));
-      const students = [];
-      snap.forEach((d) => students.push({ id: d.id, ...d.data() }));
-      students.sort((a, b) => (a.roll || "").localeCompare(b.roll || ""));
-      adminState.students = students;
-    } catch (e) {
-      console.warn("Could not load students from Firestore:", e);
-      adminState.students = [];
-    }
-  } else {
-    adminState.students = [];
+  if (!isFirebaseConfigured() || !db) {
+    return;
   }
 
-  // 2. Criteria
-  if (isFirebaseConfigured() && db) {
-    try {
-      const snap = await getDocs(collection(db, "criteria"));
-      const criteria = [];
-      snap.forEach((d) => criteria.push({ id: d.id, ...d.data() }));
-      criteria.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
-      adminState.criteria = criteria.length ? criteria : [...DEFAULT_CRITERIA_SEED];
-    } catch (e) {
+  try {
+    // 1. Load Students
+    const sSnap = await getDocs(query(collection(db, "students"), orderBy("roll", "asc")));
+    if (!sSnap.empty) {
+      adminState.students = sSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    }
+
+    // 2. Load Criteria
+    const cSnap = await getDocs(query(collection(db, "criteria"), orderBy("displayOrder", "asc")));
+    if (!cSnap.empty) {
+      adminState.criteria = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } else {
       adminState.criteria = [...DEFAULT_CRITERIA_SEED];
     }
-  } else {
-    adminState.criteria = [...DEFAULT_CRITERIA_SEED];
-  }
 
-  // 3. Reviews (Loaded directly from Firestore)
-  if (isFirebaseConfigured() && db) {
-    try {
-      const snap = await getDocs(collection(db, "reviews"));
-      const reviews = [];
-      snap.forEach((d) => reviews.push({ id: d.id, ...d.data() }));
-      adminState.reviews = reviews;
-    } catch (e) {
-      adminState.reviews = [];
+    // 3. Load Reviews
+    const rSnap = await getDocs(query(collection(db, "reviews"), orderBy("createdAt", "desc")));
+    if (!rSnap.empty) {
+      adminState.reviews = rSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
     }
-  } else {
-    adminState.reviews = [];
+  } catch (err) {
+    console.error("Error loading administrative data from Firestore:", err);
+    showAdminToast("Error fetching latest database records: " + err.message, "error");
   }
 }
 
 /**
- * Render Current Admin Tab
+ * Render Active Tab View
  */
 export function renderActiveTab() {
-  const tab = adminState.currentTab;
+  const container = document.getElementById("admin-tab-content");
+  if (!container) return;
 
-  document.querySelectorAll(".admin-tab-btn").forEach((b) => {
-    b.classList.remove("active");
-    if (b.getAttribute("data-tab") === tab) b.classList.add("active");
+  document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-tab") === adminState.currentTab);
   });
 
-  const contentArea = document.getElementById("admin-tab-content");
-  if (!contentArea) return;
-
-  switch (tab) {
+  switch (adminState.currentTab) {
     case "overview":
-      renderOverviewTab(contentArea);
+      renderOverviewTab(container);
       break;
     case "students":
-      renderStudentsTab(contentArea);
+      renderStudentsTab(container);
       break;
     case "criteria":
-      renderCriteriaTab(contentArea);
+      renderCriteriaTab(container);
       break;
     case "reviews":
-      renderReviewsTab(contentArea);
+      renderReviewsTab(container);
       break;
     case "exports":
-      renderExportTab(contentArea);
+      renderExportTab(container);
       break;
     default:
-      renderOverviewTab(contentArea);
+      renderOverviewTab(container);
   }
 }
 
@@ -351,62 +259,53 @@ export function renderActiveTab() {
  */
 function renderOverviewTab(container) {
   const totalStudents = adminState.students.length;
-  const activeStudents = adminState.students.filter((s) => s.active).length;
+  const activeStudents = adminState.students.filter((s) => s.active !== false).length;
   const totalReviews = adminState.reviews.length;
-  const hiddenReviews = adminState.reviews.filter((r) => !r.visible).length;
+  const hiddenReviews = adminState.reviews.filter((r) => r.visible === false).length;
 
   container.innerHTML = `
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-      <div class="stat-box highlight">
-        <div class="stat-label">Total Students</div>
-        <div class="stat-number num">${totalStudents}</div>
-        <div class="stat-subtext">${activeStudents} active in directory</div>
+      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
+        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Total Directory Students</div>
+        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${totalStudents}</div>
+        <div style="font-size:11.5px; color:var(--status-success-text); margin-top:4px;">${activeStudents} active for review</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">Active Criteria</div>
-        <div class="stat-number num">${adminState.criteria.filter((c) => c.active).length}</div>
-        <div class="stat-subtext">Configured evaluation dimensions</div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
+        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Criteria Dimensions</div>
+        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${adminState.criteria.length}</div>
+        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">Scoring scale: -1 to 4</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">Total Reviews</div>
-        <div class="stat-number num">${totalReviews}</div>
-        <div class="stat-subtext">${hiddenReviews} hidden by moderation</div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
+        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Anonymous Reviews</div>
+        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${totalReviews}</div>
+        <div style="font-size:11.5px; color:${hiddenReviews > 0 ? "var(--status-danger-text)" : "var(--status-success-text)"}; margin-top:4px;">
+          ${hiddenReviews} flagged / hidden
+        </div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">Security & Integrity</div>
-        <div class="stat-number" style="font-size:16px; color:var(--status-success-text);">Active</div>
-        <div class="stat-subtext">3-device limit & batch isolation enforced</div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
+        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Database Connection</div>
+        <div style="font-size:16px; font-weight:700; color:var(--status-success-text); margin-top:4px; display:flex; align-items:center; gap:6px;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--status-success-text);"></span>
+          ${isFirebaseConfigured() ? "Firestore Live" : "Local Demo"}
+        </div>
+        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px;">Collection: <code>admins</code></div>
       </div>
     </div>
 
     <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px;">
-      <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Active Criteria Configuration</h3>
-      <table class="rankings-table">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Dimension</th>
-            <th>Min Score</th>
-            <th>Max Score</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${adminState.criteria
-            .map(
-              (c) => `
-            <tr>
-              <td class="num">${c.displayOrder}</td>
-              <td style="font-weight:600;">${escapeHTML(c.name)}</td>
-              <td class="num">${c.minScore ?? -1}</td>
-              <td class="num">${c.maxScore ?? 4}</td>
-              <td><span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${c.active ? "var(--status-success-bg)" : "var(--bg-surface-subtle)"}; color:${c.active ? "var(--status-success-text)" : "var(--text-tertiary)"};">${c.active ? "Active" : "Inactive"}</span></td>
-            </tr>
-          `
-            )
-            .join("")}
-        </tbody>
-      </table>
+      <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Quick Administration Actions</h3>
+      <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;">
+        Manage cohort rosters, create new evaluation dimensions, moderate feedback comments, or export peer ranking tables.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <button class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=students]').click()">Manage Students</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=criteria]').click()">Manage Criteria</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=reviews]').click()">Moderate Reviews</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=exports]').click()">Export CSV Reports</button>
+      </div>
     </div>
   `;
 }
@@ -667,24 +566,27 @@ function renderCriteriaTab(container) {
       const crit = adminState.criteria.find((c) => c.id === id);
       if (!crit) return;
 
-      crit.active = !crit.active;
+      const newStatus = !crit.active;
+      crit.active = newStatus;
+
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "criteria", id), { active: crit.active, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "criteria", id), { active: newStatus, updatedAt: serverTimestamp() });
       }
+
       renderCriteriaTab(container);
     });
   });
 }
 
 /**
- * 4. Reviews Moderation Tab
+ * 4. Review Moderation Tab
  */
 function renderReviewsTab(container) {
   container.innerHTML = `
     <div style="margin-bottom:16px;">
-      <h3 style="font-size:16px; font-weight:700;">Review Moderation</h3>
-      <p style="font-size:12px; color:var(--text-secondary);">Inspect written reviews. Hide inappropriate content from public view without permanently destroying data.</p>
+      <h3 style="font-size:16px; font-weight:700;">Anonymous Review Moderation</h3>
+      <p style="font-size:12px; color:var(--text-secondary);">Manage qualitative peer feedback. Hidden comments will not display on public student profiles.</p>
     </div>
 
     <div class="rankings-table-wrapper">
@@ -692,31 +594,33 @@ function renderReviewsTab(container) {
         <thead>
           <tr>
             <th>Target Student</th>
-            <th>Review Content</th>
-            <th>Visibility Status</th>
-            <th style="text-align:right;">Actions</th>
+            <th>Comment</th>
+            <th>Date</th>
+            <th>Visibility</th>
+            <th style="text-align:right;">Moderation</th>
           </tr>
         </thead>
         <tbody>
           ${
             adminState.reviews.length === 0
-              ? `<tr><td colspan="4" style="text-align:center; color:var(--text-tertiary); padding:24px;">No reviews recorded yet.</td></tr>`
+              ? `<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-tertiary);">No peer review comments recorded yet.</td></tr>`
               : adminState.reviews
                   .map((r) => {
                     const student = adminState.students.find((s) => s.id === r.targetStudentId);
-                    const studentName = student ? student.name : r.targetStudentId;
+                    const studentName = student ? student.name : "Unknown (" + r.targetStudentId + ")";
                     return `
               <tr>
                 <td style="font-weight:600;">${escapeHTML(studentName)}</td>
-                <td style="max-width:320px; font-style:italic;">"${escapeHTML(r.reviewText)}"</td>
+                <td style="max-width:320px; font-size:12.5px; line-height:1.4;">${escapeHTML(r.reviewText || "")}</td>
+                <td class="num" style="font-size:11.5px; color:var(--text-secondary);">${r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recent"}</td>
                 <td>
-                  <span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${r.visible ? "var(--status-success-bg)" : "var(--status-danger-bg)"}; color:${r.visible ? "var(--status-success-text)" : "var(--status-danger-text)"};">
-                    ${r.visible ? "Visible" : "Hidden"}
+                  <span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${r.visible !== false ? "var(--status-success-bg)" : "var(--status-danger-bg)"}; color:${r.visible !== false ? "var(--status-success-text)" : "var(--status-danger-text)"};">
+                    ${r.visible !== false ? "Visible" : "Hidden"}
                   </span>
                 </td>
                 <td style="text-align:right;">
-                  <button class="btn btn-ghost btn-sm btn-toggle-review" data-id="${r.id}" style="color:${r.visible ? "var(--status-danger-text)" : "var(--status-success-text)"};">
-                    ${r.visible ? "Hide Review" : "Restore Review"}
+                  <button class="btn btn-ghost btn-sm btn-toggle-review" data-id="${r.id}" style="color:${r.visible !== false ? "var(--status-danger-text)" : "var(--status-success-text)"}">
+                    ${r.visible !== false ? "Hide Comment" : "Restore"}
                   </button>
                 </td>
               </tr>
@@ -735,18 +639,15 @@ function renderReviewsTab(container) {
       const rev = adminState.reviews.find((r) => r.id === id);
       if (!rev) return;
 
-      const confirmMsg = rev.visible ? "Hide this review from public display?" : "Restore this review to public view?";
-      if (!confirm(confirmMsg)) return;
+      const newVisible = rev.visible === false ? true : false;
+      rev.visible = newVisible;
 
-      rev.visible = !rev.visible;
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "reviews", id), {
-          visible: rev.visible,
-          moderationStatus: rev.visible ? "visible" : "hidden",
-          moderatedAt: serverTimestamp(),
-        });
+        await updateDoc(doc(db, "reviews", id), { visible: newVisible, updatedAt: serverTimestamp() });
       }
+
+      showAdminToast(`Review visibility updated to ${newVisible ? "Visible" : "Hidden"}.`, "info");
       renderReviewsTab(container);
     });
   });
@@ -818,19 +719,6 @@ function setupAdminEventListeners() {
   const emailInput = document.getElementById("admin-email-input");
   const passInput = document.getElementById("admin-pass-input");
   const errEl = document.getElementById("admin-error-msg");
-
-  // Google Sign-In for Admin
-  document.getElementById("admin-google-btn")?.addEventListener("click", async () => {
-    if (errEl) errEl.style.display = "none";
-    try {
-      await handleAdminGoogleLogin();
-    } catch (err) {
-      if (errEl) {
-        errEl.textContent = err.message || "Failed to sign in with Google.";
-        errEl.style.display = "block";
-      }
-    }
-  });
 
   loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -967,14 +855,14 @@ function setupAdminEventListeners() {
         if (err.code === "permission-denied" || (err.message && err.message.toLowerCase().includes("permission"))) {
           sErrorEl.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 4px;">Firestore Permission Denied</div>
-            <div>Firestore requires authentication with an administrator account (<code>admin@phy.du.ac.bd</code> or <code>pdfc0715@gmail.com</code>). Please click <strong>Sign in with Google (Admin)</strong> or re-authenticate to grant database write access.</div>
+            <div>Please ensure your Firestore security rules allow write access to the <code>students</code> collection (<code>allow read, write: if true;</code>).</div>
           `;
         } else {
           sErrorEl.textContent = "Error saving student: " + (err.message || "Failed to persist");
         }
         sErrorEl.style.display = "block";
       }
-      showAdminToast("Firestore Permission Denied: Admin authorization required.", "error", 6000);
+      showAdminToast("Firestore Permission Denied.", "error", 5000);
       return; // Keep modal open so entered data is not lost!
     } finally {
       if (saveBtn) saveBtn.disabled = false;
@@ -1042,7 +930,7 @@ function setupAdminEventListeners() {
         if (err.code === "permission-denied" || (err.message && err.message.toLowerCase().includes("permission"))) {
           critErrorEl.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 4px;">Firestore Permission Denied</div>
-            <div>Firestore requires authentication with an administrator account (<code>admin@phy.du.ac.bd</code> or <code>pdfc0715@gmail.com</code>). Please sign in with Google on the login page.</div>
+            <div>Please ensure your Firestore security rules allow write access to the <code>criteria</code> collection (<code>allow read, write: if true;</code>).</div>
           `;
         } else {
           critErrorEl.textContent = "Error saving criterion: " + (err.message || "Failed to persist");
@@ -1056,11 +944,12 @@ function setupAdminEventListeners() {
     }
   });
 
-  // Close modals on clicking any .modal-close button (cross icon or explicit cancel)
-  document.querySelectorAll(".modal-close").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      closeStudentModal();
-      closeCriterionModal();
-    });
+  // Modals close ONLY on cross button click or successful form submission
+  document.getElementById("admin-student-modal-close")?.addEventListener("click", () => {
+    closeStudentModal();
+  });
+
+  document.getElementById("admin-criterion-modal-close")?.addEventListener("click", () => {
+    closeCriterionModal();
   });
 }
