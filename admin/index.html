@@ -1,1 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal — 104 Peer Review</title>
+  <meta name="description" content="Administration, criteria configuration, and moderation portal for DU Physics 104." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
+  <!-- Import Map for direct browser ES Module execution (e.g. VS Code Live Server, static servers) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js"
+      }
+    }
+  </script>
+
+  <!-- Design System Stylesheets -->
+  <link rel="stylesheet" href="/src/css/reset.css" />
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/layout.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/themes.css" />
+  <link rel="stylesheet" href="/src/css/responsive.css" />
+
+  <style>
+    .admin-nav {
+      display: flex;
+      gap: var(--space-2);
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: var(--space-6);
+      overflow-x: auto;
+    }
+    .admin-tab-btn {
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all var(--duration-fast);
+    }
+    .admin-tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .admin-tab-btn.active {
+      color: var(--accent-primary);
+      border-bottom-color: var(--accent-primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-section">
+          <div class="brand-badge">104</div>
+          <div class="brand-title">
+            <span class="brand-main">PHYSICS · DU</span>
+            <span class="brand-sub">Administration & Moderation</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="/" class="btn btn-ghost btn-sm" style="font-size: 12px;">
+            ← Return to App
+          </a>
+          <span id="admin-user-email" class="num" style="font-size: 12px; color: var(--text-tertiary);"></span>
+          <button id="admin-logout-btn" class="btn btn-ghost btn-sm" style="display: none; color: var(--status-danger-text);">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Admin Login Section -->
+      <section id="admin-login-section" style="max-width: 420px; margin: 48px auto 0; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-8); box-shadow: var(--shadow-md);">
+        <div style="margin-bottom: var(--space-6);">
+          <div style="display: inline-block; padding: 2px 8px; background: var(--accent-subtle); color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border-radius: var(--radius-xs); margin-bottom: 8px;">
+            INTERNAL ACCESS
+          </div>
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary);">Administrator Login</h2>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+            Protected access for Physics Department 104 administrators and moderators.
+          </p>
+        </div>
+
+        <form id="admin-login-form">
+          <div class="form-group">
+            <label class="form-label" for="admin-email-input">Admin Email</label>
+            <input type="email" id="admin-email-input" class="form-input" placeholder="admin@phy.du.ac.bd" required autocomplete="username" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-pass-input">Password</label>
+            <input type="password" id="admin-pass-input" class="form-input" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+
+          <div id="admin-error-msg" style="display: none; padding: 8px 12px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12px; margin-bottom: var(--space-4);"></div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+            Authenticate
+          </button>
+        </form>
+      </section>
+
+      <!-- Admin Dashboard Section -->
+      <section id="admin-dashboard-section" style="display: none;">
+        <nav class="admin-nav">
+          <button class="admin-tab-btn active" data-tab="overview">Overview</button>
+          <button class="admin-tab-btn" data-tab="students">Students</button>
+          <button class="admin-tab-btn" data-tab="criteria">Criteria</button>
+          <button class="admin-tab-btn" data-tab="reviews">Review Moderation</button>
+          <button class="admin-tab-btn" data-tab="exports">Data Exports</button>
+        </nav>
+
+        <div id="admin-tab-content">
+          <!-- Populated dynamically via admin.js -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div>Department of Physics · University of Dhaka</div>
+      <div class="num">Batch 104 Peer Review Administration</div>
+    </footer>
+  </div>
+
+  <!-- Admin Student Modal (Add / Edit) -->
+  <div id="admin-student-modal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <span id="admin-student-modal-title" class="modal-title">Add New Student</span>
+        <button type="button" class="modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="admin-student-form">
+        <div class="modal-body">
+          <div id="admin-student-error" style="display: none; padding: 8px 12px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12px; margin-bottom: var(--space-4);"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-input-student-name">Student Full Name <span style="color: var(--status-danger-text);">*</span></label>
+            <input type="text" id="admin-input-student-name" class="form-input" placeholder="e.g. Tanvir Hasan" required autocomplete="off" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-input-student-roll">DU Roll Number <span style="color: var(--status-danger-text);">*</span></label>
+            <input type="text" id="admin-input-student-roll" class="form-input" placeholder="e.g. 2024713443" required pattern="[0-9]{4,15}" autocomplete="off" />
+            <div class="form-help">Unique academic roll number (e.g., 2024xxxxxx).</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-input-student-img">Google Drive Share Link or Direct Image URL</label>
+            <input type="url" id="admin-input-student-img" class="form-input" placeholder="https://drive.google.com/file/d/... or https://..." autocomplete="off" />
+            <div class="form-help">Paste any public Google Drive view link or web picture URL.</div>
+          </div>
+
+          <!-- Image Preview Box -->
+          <div style="display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+            <div id="admin-student-preview-avatar" style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border-default); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--text-secondary); overflow: hidden; flex-shrink: 0;">
+              <span>DU</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              <div id="admin-student-preview-status" style="font-weight: 600; color: var(--text-primary);">No image link entered</div>
+              <div style="color: var(--text-tertiary); font-size: 11px;">Initials will display automatically if empty</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+            <input type="checkbox" id="admin-input-student-active" checked style="width: 16px; height: 16px; accent-color: var(--accent-primary); cursor: pointer;" />
+            <label class="form-label" for="admin-input-student-active" style="margin-bottom: 0; cursor: pointer;">
+              Active in Batch 104 Directory (Visible for peer evaluation)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+          <button type="submit" id="admin-btn-save-student" class="btn btn-primary">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Criterion Modal -->
+  <div id="admin-criterion-modal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 460px;">
+      <div class="modal-header">
+        <span class="modal-title">Add Evaluation Criterion</span>
+        <button type="button" class="modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="admin-criterion-form">
+        <div class="modal-body">
+          <div id="admin-criterion-error" style="display: none; padding: 8px 12px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12px; margin-bottom: var(--space-4);"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-input-crit-name">Criterion Dimension Name <span style="color: var(--status-danger-text);">*</span></label>
+            <input type="text" id="admin-input-crit-name" class="form-input" placeholder="e.g. Collaboration & Teamwork" required />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="admin-input-crit-min">Min Score</label>
+              <input type="number" id="admin-input-crit-min" class="form-input" value="-1" min="-1" max="4" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="admin-input-crit-max">Max Score</label>
+              <input type="number" id="admin-input-crit-max" class="form-input" value="4" min="-1" max="4" required />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+          <button type="submit" id="admin-btn-save-criterion" class="btn btn-primary">Save Criterion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script type="module">
+    import { initAdmin } from '/src/js/admin.js';
+    initAdmin();
+  </script>
+</body>
+</html>
