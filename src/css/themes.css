@@ -1,0 +1,31 @@
+/* Theme Transition & Mode-specific enhancements */
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Smooth transition when changing theme */
+body, .app-header, .stat-box, .student-card, .modal-container, .rankings-table-wrapper {
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+/* Theme Toggle Button Icon Transitions */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.theme-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-subtle);
+}
