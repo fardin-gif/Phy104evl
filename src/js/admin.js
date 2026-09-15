@@ -188,69 +188,89 @@ export function handleAdminLogout() {
 }
 
 /**
- * Load administrative datasets from Firestore
+ * Load all Admin Datasets
  */
 export async function loadAdminData() {
   const db = getFirebaseDb();
-  if (!isFirebaseConfigured() || !db) {
-    return;
+
+  // 1. Students (Loaded directly from Firestore)
+  if (isFirebaseConfigured() && db) {
+    try {
+      const snap = await getDocs(collection(db, "students"));
+      const students = [];
+      snap.forEach((d) => students.push({ id: d.id, ...d.data() }));
+      students.sort((a, b) => (a.roll || "").localeCompare(b.roll || ""));
+      adminState.students = students;
+    } catch (e) {
+      console.warn("Could not load students from Firestore:", e);
+      adminState.students = [];
+    }
+  } else {
+    adminState.students = [];
   }
 
-  try {
-    // 1. Load Students
-    const sSnap = await getDocs(query(collection(db, "students"), orderBy("roll", "asc")));
-    if (!sSnap.empty) {
-      adminState.students = sSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    }
-
-    // 2. Load Criteria
-    const cSnap = await getDocs(query(collection(db, "criteria"), orderBy("displayOrder", "asc")));
-    if (!cSnap.empty) {
-      adminState.criteria = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    } else {
+  // 2. Criteria
+  if (isFirebaseConfigured() && db) {
+    try {
+      const snap = await getDocs(collection(db, "criteria"));
+      const criteria = [];
+      snap.forEach((d) => criteria.push({ id: d.id, ...d.data() }));
+      criteria.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+      adminState.criteria = criteria.length ? criteria : [...DEFAULT_CRITERIA_SEED];
+    } catch (e) {
       adminState.criteria = [...DEFAULT_CRITERIA_SEED];
     }
+  } else {
+    adminState.criteria = [...DEFAULT_CRITERIA_SEED];
+  }
 
-    // 3. Load Reviews
-    const rSnap = await getDocs(query(collection(db, "reviews"), orderBy("createdAt", "desc")));
-    if (!rSnap.empty) {
-      adminState.reviews = rSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // 3. Reviews (Loaded directly from Firestore)
+  if (isFirebaseConfigured() && db) {
+    try {
+      const snap = await getDocs(collection(db, "reviews"));
+      const reviews = [];
+      snap.forEach((d) => reviews.push({ id: d.id, ...d.data() }));
+      adminState.reviews = reviews;
+    } catch (e) {
+      adminState.reviews = [];
     }
-  } catch (err) {
-    console.error("Error loading administrative data from Firestore:", err);
-    showAdminToast("Error fetching latest database records: " + err.message, "error");
+  } else {
+    adminState.reviews = [];
   }
 }
 
 /**
- * Render Active Tab View
+ * Render Current Admin Tab
  */
 export function renderActiveTab() {
-  const container = document.getElementById("admin-tab-content");
-  if (!container) return;
+  const tab = adminState.currentTab;
 
-  document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.getAttribute("data-tab") === adminState.currentTab);
+  document.querySelectorAll(".admin-tab-btn").forEach((b) => {
+    b.classList.remove("active");
+    if (b.getAttribute("data-tab") === tab) b.classList.add("active");
   });
 
-  switch (adminState.currentTab) {
+  const contentArea = document.getElementById("admin-tab-content");
+  if (!contentArea) return;
+
+  switch (tab) {
     case "overview":
-      renderOverviewTab(container);
+      renderOverviewTab(contentArea);
       break;
     case "students":
-      renderStudentsTab(container);
+      renderStudentsTab(contentArea);
       break;
     case "criteria":
-      renderCriteriaTab(container);
+      renderCriteriaTab(contentArea);
       break;
     case "reviews":
-      renderReviewsTab(container);
+      renderReviewsTab(contentArea);
       break;
     case "exports":
-      renderExportTab(container);
+      renderExportTab(contentArea);
       break;
     default:
-      renderOverviewTab(container);
+      renderOverviewTab(contentArea);
   }
 }
 
@@ -259,53 +279,62 @@ export function renderActiveTab() {
  */
 function renderOverviewTab(container) {
   const totalStudents = adminState.students.length;
-  const activeStudents = adminState.students.filter((s) => s.active !== false).length;
+  const activeStudents = adminState.students.filter((s) => s.active).length;
   const totalReviews = adminState.reviews.length;
-  const hiddenReviews = adminState.reviews.filter((r) => r.visible === false).length;
+  const hiddenReviews = adminState.reviews.filter((r) => !r.visible).length;
 
   container.innerHTML = `
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
-        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Total Directory Students</div>
-        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${totalStudents}</div>
-        <div style="font-size:11.5px; color:var(--status-success-text); margin-top:4px;">${activeStudents} active for review</div>
+      <div class="stat-box highlight">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-number num">${totalStudents}</div>
+        <div class="stat-subtext">${activeStudents} active in directory</div>
       </div>
-
-      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
-        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Criteria Dimensions</div>
-        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${adminState.criteria.length}</div>
-        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">Scoring scale: -1 to 4</div>
+      <div class="stat-box">
+        <div class="stat-label">Active Criteria</div>
+        <div class="stat-number num">${adminState.criteria.filter((c) => c.active).length}</div>
+        <div class="stat-subtext">Configured evaluation dimensions</div>
       </div>
-
-      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
-        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Anonymous Reviews</div>
-        <div class="num" style="font-size:24px; font-weight:700; color:var(--text-primary);">${totalReviews}</div>
-        <div style="font-size:11.5px; color:${hiddenReviews > 0 ? "var(--status-danger-text)" : "var(--status-success-text)"}; margin-top:4px;">
-          ${hiddenReviews} flagged / hidden
-        </div>
+      <div class="stat-box">
+        <div class="stat-label">Total Reviews</div>
+        <div class="stat-number num">${totalReviews}</div>
+        <div class="stat-subtext">${hiddenReviews} hidden by moderation</div>
       </div>
-
-      <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
-        <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:4px;">Database Connection</div>
-        <div style="font-size:16px; font-weight:700; color:var(--status-success-text); margin-top:4px; display:flex; align-items:center; gap:6px;">
-          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--status-success-text);"></span>
-          ${isFirebaseConfigured() ? "Firestore Live" : "Local Demo"}
-        </div>
-        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px;">Collection: <code>admins</code></div>
+      <div class="stat-box">
+        <div class="stat-label">Security & Integrity</div>
+        <div class="stat-number" style="font-size:16px; color:var(--status-success-text);">Active</div>
+        <div class="stat-subtext">3-device limit & batch isolation enforced</div>
       </div>
     </div>
 
     <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px;">
-      <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Quick Administration Actions</h3>
-      <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;">
-        Manage cohort rosters, create new evaluation dimensions, moderate feedback comments, or export peer ranking tables.
-      </p>
-      <div style="display:flex; flex-wrap:wrap; gap:10px;">
-        <button class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=students]').click()">Manage Students</button>
-        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=criteria]').click()">Manage Criteria</button>
-        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=reviews]').click()">Moderate Reviews</button>
-        <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=exports]').click()">Export CSV Reports</button>
-      </div>
+      <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Active Criteria Configuration</h3>
+      <table class="rankings-table">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Dimension</th>
+            <th>Min Score</th>
+            <th>Max Score</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${adminState.criteria
+            .map(
+              (c) => `
+            <tr>
+              <td class="num">${c.displayOrder}</td>
+              <td style="font-weight:600;">${escapeHTML(c.name)}</td>
+              <td class="num">${c.minScore ?? -1}</td>
+              <td class="num">${c.maxScore ?? 4}</td>
+              <td><span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${c.active ? "var(--status-success-bg)" : "var(--bg-surface-subtle)"}; color:${c.active ? "var(--status-success-text)" : "var(--text-tertiary)"};">${c.active ? "Active" : "Inactive"}</span></td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
     </div>
   `;
 }
@@ -566,27 +595,24 @@ function renderCriteriaTab(container) {
       const crit = adminState.criteria.find((c) => c.id === id);
       if (!crit) return;
 
-      const newStatus = !crit.active;
-      crit.active = newStatus;
-
+      crit.active = !crit.active;
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "criteria", id), { active: newStatus, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "criteria", id), { active: crit.active, updatedAt: serverTimestamp() });
       }
-
       renderCriteriaTab(container);
     });
   });
 }
 
 /**
- * 4. Review Moderation Tab
+ * 4. Reviews Moderation Tab
  */
 function renderReviewsTab(container) {
   container.innerHTML = `
     <div style="margin-bottom:16px;">
-      <h3 style="font-size:16px; font-weight:700;">Anonymous Review Moderation</h3>
-      <p style="font-size:12px; color:var(--text-secondary);">Manage qualitative peer feedback. Hidden comments will not display on public student profiles.</p>
+      <h3 style="font-size:16px; font-weight:700;">Review Moderation</h3>
+      <p style="font-size:12px; color:var(--text-secondary);">Inspect written reviews. Hide inappropriate content from public view without permanently destroying data.</p>
     </div>
 
     <div class="rankings-table-wrapper">
@@ -594,33 +620,31 @@ function renderReviewsTab(container) {
         <thead>
           <tr>
             <th>Target Student</th>
-            <th>Comment</th>
-            <th>Date</th>
-            <th>Visibility</th>
-            <th style="text-align:right;">Moderation</th>
+            <th>Review Content</th>
+            <th>Visibility Status</th>
+            <th style="text-align:right;">Actions</th>
           </tr>
         </thead>
         <tbody>
           ${
             adminState.reviews.length === 0
-              ? `<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-tertiary);">No peer review comments recorded yet.</td></tr>`
+              ? `<tr><td colspan="4" style="text-align:center; color:var(--text-tertiary); padding:24px;">No reviews recorded yet.</td></tr>`
               : adminState.reviews
                   .map((r) => {
                     const student = adminState.students.find((s) => s.id === r.targetStudentId);
-                    const studentName = student ? student.name : "Unknown (" + r.targetStudentId + ")";
+                    const studentName = student ? student.name : r.targetStudentId;
                     return `
               <tr>
                 <td style="font-weight:600;">${escapeHTML(studentName)}</td>
-                <td style="max-width:320px; font-size:12.5px; line-height:1.4;">${escapeHTML(r.reviewText || "")}</td>
-                <td class="num" style="font-size:11.5px; color:var(--text-secondary);">${r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recent"}</td>
+                <td style="max-width:320px; font-style:italic;">"${escapeHTML(r.reviewText)}"</td>
                 <td>
-                  <span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${r.visible !== false ? "var(--status-success-bg)" : "var(--status-danger-bg)"}; color:${r.visible !== false ? "var(--status-success-text)" : "var(--status-danger-text)"};">
-                    ${r.visible !== false ? "Visible" : "Hidden"}
+                  <span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${r.visible ? "var(--status-success-bg)" : "var(--status-danger-bg)"}; color:${r.visible ? "var(--status-success-text)" : "var(--status-danger-text)"};">
+                    ${r.visible ? "Visible" : "Hidden"}
                   </span>
                 </td>
                 <td style="text-align:right;">
-                  <button class="btn btn-ghost btn-sm btn-toggle-review" data-id="${r.id}" style="color:${r.visible !== false ? "var(--status-danger-text)" : "var(--status-success-text)"}">
-                    ${r.visible !== false ? "Hide Comment" : "Restore"}
+                  <button class="btn btn-ghost btn-sm btn-toggle-review" data-id="${r.id}" style="color:${r.visible ? "var(--status-danger-text)" : "var(--status-success-text)"};">
+                    ${r.visible ? "Hide Review" : "Restore Review"}
                   </button>
                 </td>
               </tr>
@@ -639,15 +663,18 @@ function renderReviewsTab(container) {
       const rev = adminState.reviews.find((r) => r.id === id);
       if (!rev) return;
 
-      const newVisible = rev.visible === false ? true : false;
-      rev.visible = newVisible;
+      const confirmMsg = rev.visible ? "Hide this review from public display?" : "Restore this review to public view?";
+      if (!confirm(confirmMsg)) return;
 
+      rev.visible = !rev.visible;
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "reviews", id), { visible: newVisible, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "reviews", id), {
+          visible: rev.visible,
+          moderationStatus: rev.visible ? "visible" : "hidden",
+          moderatedAt: serverTimestamp(),
+        });
       }
-
-      showAdminToast(`Review visibility updated to ${newVisible ? "Visible" : "Hidden"}.`, "info");
       renderReviewsTab(container);
     });
   });
