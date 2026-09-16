@@ -83,10 +83,9 @@ async function bootstrap() {
       }
     });
 
-    const closeBtn = overlay.querySelector(".modal-close");
-    if (closeBtn) {
+    overlay.querySelectorAll(".modal-close").forEach((closeBtn) => {
       closeBtn.addEventListener("click", () => closeModal(overlay.id));
-    }
+    });
   });
 }
 
