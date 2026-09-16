@@ -80,6 +80,21 @@ export async function loadCriteria() {
         criteria.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
         setState({ criteria });
         return criteria;
+      } else {
+        // Check if criteria collection has any docs at all; if completely empty, seed default
+        const allSnap = await getDocs(criteriaCol);
+        if (allSnap.empty) {
+          for (const c of DEFAULT_CRITERIA_SEED) {
+            try {
+              await setDoc(doc(db, "criteria", c.id), {
+                ...c,
+                createdAt: serverTimestamp(),
+              }, { merge: true });
+            } catch (seedErr) {
+              console.warn("Could not seed default criterion:", seedErr);
+            }
+          }
+        }
       }
     } catch (err) {
       console.warn("Could not load criteria from Firestore:", err);
