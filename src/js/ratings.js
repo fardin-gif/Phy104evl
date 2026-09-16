@@ -92,6 +92,109 @@ export async function loadCriteria() {
 }
 
 /**
+ * Load all aggregates from Firestore and populate global state
+ */
+export async function loadAggregates() {
+  const db = getFirebaseDb();
+  if (isFirebaseConfigured() && db) {
+    try {
+      const aggSnap = await getDocs(collection(db, "aggregates"));
+      const aggregates = {};
+      aggSnap.forEach((docSnap) => {
+        aggregates[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+      });
+
+      // If aggregates collection is empty, backfill from individual ratings
+      if (Object.keys(aggregates).length === 0) {
+        try {
+          const ratingsSnap = await getDocs(collection(db, "ratings"));
+          if (!ratingsSnap.empty) {
+            const studentRatings = {};
+            ratingsSnap.forEach((d) => {
+              const data = d.data() || {};
+              const sId = data.targetStudentId;
+              if (sId) {
+                if (!studentRatings[sId]) studentRatings[sId] = [];
+                studentRatings[sId].push(data.scores || {});
+              }
+            });
+
+            for (const [sId, ratingsList] of Object.entries(studentRatings)) {
+              const count = ratingsList.length;
+              const criterionSums = {};
+              const criterionCounts = {};
+              for (const sc of ratingsList) {
+                for (const [cId, val] of Object.entries(sc)) {
+                  criterionSums[cId] = (criterionSums[cId] || 0) + Number(val);
+                  criterionCounts[cId] = (criterionCounts[cId] || 0) + 1;
+                }
+              }
+
+              const critAvgs = {};
+              let overallSum = 0;
+              let overallCount = 0;
+              for (const [cId, sum] of Object.entries(criterionSums)) {
+                const cCount = criterionCounts[cId] || 1;
+                const avg = Math.round((sum / cCount) * 100) / 100;
+                critAvgs[cId] = avg;
+                overallSum += avg;
+                overallCount++;
+              }
+              const overall = overallCount > 0 ? Math.round((overallSum / overallCount) * 100) / 100 : null;
+
+              const aggObj = {
+                studentId: sId,
+                overallAverage: overall,
+                ratingCount: count,
+                reviewCount: 0,
+                criterionAverages: critAvgs,
+              };
+              aggregates[sId] = aggObj;
+              setDoc(doc(db, "aggregates", sId), aggObj).catch(() => {});
+            }
+          }
+        } catch (backfillErr) {
+          console.warn("Could not backfill aggregates from ratings:", backfillErr);
+        }
+      }
+
+      setState({ aggregates });
+      return aggregates;
+    } catch (err) {
+      console.warn("Could not load aggregates from Firestore:", err);
+    }
+  }
+  return {};
+}
+
+/**
+ * Load all students that the current logged-in user has already rated
+ */
+export async function loadUserSubmittedRatings(reviewerUid) {
+  if (!reviewerUid) return new Set();
+  const db = getFirebaseDb();
+  if (isFirebaseConfigured() && db) {
+    try {
+      const ratingsCol = collection(db, "ratings");
+      const q = query(ratingsCol, where("reviewerUid", "==", reviewerUid));
+      const snap = await getDocs(q);
+      const userSubmittedRatingIds = new Set();
+      snap.forEach((docSnap) => {
+        const data = docSnap.data() || {};
+        if (data.targetStudentId) {
+          userSubmittedRatingIds.add(data.targetStudentId);
+        }
+      });
+      setState({ userSubmittedRatingIds });
+      return userSubmittedRatingIds;
+    } catch (err) {
+      console.warn("Could not load user's submitted ratings:", err);
+    }
+  }
+  return new Set();
+}
+
+/**
  * Check if the authenticated user has already rated a specific target student
  */
 export async function hasUserRatedStudent(reviewerUid, targetStudentId) {
@@ -124,7 +227,7 @@ export async function hasUserRatedStudent(reviewerUid, targetStudentId) {
  * Submit an anonymous rating for a target student
  */
 export async function submitRating({ targetStudentId, scores, reviewText }) {
-  const { user, criteria, aggregates, userSubmittedRatingIds } = getState();
+  const { user, criteria, userSubmittedRatingIds } = getState();
 
   if (!user || !user.canSubmitRating) {
     throw new Error("Rating submission is strictly reserved for verified 2024 batch students.");
@@ -200,6 +303,73 @@ export async function submitRating({ targetStudentId, scores, reviewText }) {
  */
 async function updateLocalAndRemoteAggregate(targetStudentId, newScores, hasNewReview, reviewText = "") {
   const { aggregates } = getState();
+  const db = getFirebaseDb();
+
+  // If live Firestore, query all ratings for this student to ensure 100% mathematical accuracy
+  if (isFirebaseConfigured() && db) {
+    try {
+      const q = query(collection(db, "ratings"), where("targetStudentId", "==", targetStudentId));
+      const ratingsSnap = await getDocs(q);
+      if (!ratingsSnap.empty) {
+        let rCount = 0;
+        const cSums = {};
+        const cCounts = {};
+        ratingsSnap.forEach((docSnap) => {
+          rCount++;
+          const data = docSnap.data() || {};
+          const sc = data.scores || {};
+          for (const [cId, val] of Object.entries(sc)) {
+            cSums[cId] = (cSums[cId] || 0) + Number(val);
+            cCounts[cId] = (cCounts[cId] || 0) + 1;
+          }
+        });
+
+        const cAvgs = {};
+        let sumAvgs = 0;
+        let countAvgs = 0;
+        for (const [cId, sum] of Object.entries(cSums)) {
+          const count = cCounts[cId] || 1;
+          const avg = Math.round((sum / count) * 100) / 100;
+          cAvgs[cId] = avg;
+          sumAvgs += avg;
+          countAvgs++;
+        }
+
+        const overall = countAvgs > 0 ? Math.round((sumAvgs / countAvgs) * 100) / 100 : null;
+
+        // Query review count
+        let revCount = 0;
+        try {
+          const revSnap = await getDocs(query(collection(db, "reviews"), where("targetStudentId", "==", targetStudentId)));
+          revSnap.forEach((d) => {
+            if (d.data().visible !== false) revCount++;
+          });
+        } catch (e) {}
+
+        const freshAgg = {
+          studentId: targetStudentId,
+          overallAverage: overall,
+          ratingCount: rCount,
+          reviewCount: revCount,
+          criterionAverages: cAvgs,
+          updatedAt: new Date().toISOString(),
+        };
+
+        aggregates[targetStudentId] = freshAgg;
+        setState({ aggregates: { ...aggregates } });
+
+        await setDoc(doc(db, "aggregates", targetStudentId), {
+          ...freshAgg,
+          updatedAt: serverTimestamp(),
+        });
+        return;
+      }
+    } catch (computeErr) {
+      console.warn("Could not recompute aggregate from all ratings:", computeErr);
+    }
+  }
+
+  // Incremental fallback
   const currentAgg = aggregates[targetStudentId] || {
     studentId: targetStudentId,
     overallAverage: null,
@@ -211,14 +381,12 @@ async function updateLocalAndRemoteAggregate(targetStudentId, newScores, hasNewR
   const newCount = (currentAgg.ratingCount || 0) + 1;
   const newReviewCount = (currentAgg.reviewCount || 0) + (hasNewReview ? 1 : 0);
 
-  // Recalculate criterion averages
   const newCriterionAverages = { ...(currentAgg.criterionAverages || {}) };
   let scoreSum = 0;
   let scoreCount = 0;
 
   for (const [cId, val] of Object.entries(newScores)) {
     const oldAvg = newCriterionAverages[cId] || 0;
-    // Incremental average: (oldAvg * (newCount - 1) + val) / newCount
     const updatedAvg = Math.round(((oldAvg * (newCount - 1) + val) / newCount) * 100) / 100;
     newCriterionAverages[cId] = updatedAvg;
     scoreSum += updatedAvg;
@@ -239,8 +407,6 @@ async function updateLocalAndRemoteAggregate(targetStudentId, newScores, hasNewR
   aggregates[targetStudentId] = updatedAgg;
   setState({ aggregates: { ...aggregates } });
 
-  // If live firestore configured, save to aggregates collection
-  const db = getFirebaseDb();
   if (isFirebaseConfigured() && db) {
     try {
       await setDoc(doc(db, "aggregates", targetStudentId), {
