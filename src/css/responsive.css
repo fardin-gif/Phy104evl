@@ -1,47 +1,94 @@
-/* Responsive Enhancements */
+/* ==========================================================================
+   Responsive Enhancements & Breakpoints
+   ========================================================================== */
+
 @media (max-width: 640px) {
   .header-inner {
-    height: 56px;
+    height: 54px;
   }
 
   .brand-sub {
     display: none;
   }
 
-  .nav-link span.nav-text {
-    display: none;
+  .brand-main {
+    font-size: 12.5px;
+  }
+
+  .overview-title {
+    font-size: 20px;
   }
 
   .stats-strip {
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
   }
 
   .student-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .student-card {
+    padding: var(--space-3);
+  }
+
+  .modal-overlay {
+    padding: var(--space-2);
+    align-items: flex-end;
   }
 
   .modal-container {
-    max-height: 95vh;
-    border-radius: var(--radius-md);
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    width: 100%;
+  }
+
+  .modal-header {
+    padding: var(--space-3) var(--space-4);
   }
 
   .modal-body {
     padding: var(--space-4);
   }
 
-  .score-btn {
-    min-width: 38px;
-    height: 38px;
-    font-size: 13px;
+  .modal-footer {
+    padding: var(--space-3) var(--space-4);
   }
 
-  .rankings-table td, .rankings-table th {
-    padding: 10px 12px;
+  .star-rating-btn {
+    min-height: 44px; /* Touch friendly */
+    padding: 6px 0;
+  }
+
+  .star-rating-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .rankings-table td, 
+  .rankings-table th {
+    padding: 10px 10px;
+    font-size: 12px;
+  }
+
+  .rankings-table .rank-cell {
+    width: 36px;
+    font-size: 12.5px;
+  }
+
+  .auth-card-container {
+    margin: 20px auto 0;
+    padding: var(--space-5);
   }
 
   .hide-mobile {
     display: none !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .student-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
