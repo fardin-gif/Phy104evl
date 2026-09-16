@@ -21,17 +21,20 @@ function handleRouteChange() {
   const appViewsContainer = document.getElementById("main-authenticated-content");
   const directoryView = document.getElementById("view-directory");
   const rankingsView = document.getElementById("view-rankings");
+  const mobileNav = document.getElementById("mobile-bottom-nav");
 
   // If unauthenticated: lock to Auth screen
   if (!user || !user.canViewData) {
     if (authView) authView.style.display = "block";
     if (appViewsContainer) appViewsContainer.style.display = "none";
+    if (mobileNav) mobileNav.style.display = "none";
     return;
   }
 
   // Authenticated: show main app views
   if (authView) authView.style.display = "none";
   if (appViewsContainer) appViewsContainer.style.display = "block";
+  if (mobileNav) mobileNav.style.display = "flex";
 
   // Navigation tabs state
   document.querySelectorAll(".nav-link").forEach((link) => {
