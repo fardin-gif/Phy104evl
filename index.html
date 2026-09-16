@@ -35,35 +35,35 @@
     <link rel="stylesheet" href="/src/css/responsive.css" />
   </head>
   <body>
-    <div class="app-container">
-      <!-- Main Application Header -->
-      <header class="app-header">
-        <div class="header-inner">
-          <div class="brand-section">
-            <div class="brand-badge">104</div>
-            <div class="brand-title">
-              <span class="brand-main">PHYSICS · UNIVERSITY OF DHAKA</span>
-              <span class="brand-sub">Peer Review System</span>
-            </div>
-          </div>
-
-          <nav class="header-nav" id="main-nav">
-            <a href="#/students" class="nav-link active">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span class="nav-text">Students</span>
-            </a>
-            <a href="#/rankings" class="nav-link">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span class="nav-text">Rankings</span>
-            </a>
-          </nav>
-
-          <div class="header-actions" id="header-auth-section">
-            <!-- Populated dynamically via ui.js -->
+    <!-- Main Application Header (100% Full Viewport Width) -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-section">
+          <div class="brand-badge">104</div>
+          <div class="brand-title">
+            <span class="brand-main">PHYSICS · UNIVERSITY OF DHAKA</span>
+            <span class="brand-sub">Peer Review System</span>
           </div>
         </div>
-      </header>
 
+        <nav class="header-nav" id="main-nav">
+          <a href="#/students" class="nav-link active">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="nav-text">Students</span>
+          </a>
+          <a href="#/rankings" class="nav-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span class="nav-text">Rankings</span>
+          </a>
+        </nav>
+
+        <div class="header-actions" id="header-auth-section">
+          <!-- Populated dynamically via ui.js -->
+        </div>
+      </div>
+    </header>
+
+    <div class="app-container">
       <!-- Main Content Container -->
       <main class="app-main">
         <!-- Authentication View (Category A: Unauthenticated Visitor) -->
@@ -167,25 +167,27 @@
           </section>
         </div>
       </main>
+    </div>
 
-      <!-- Mobile Bottom Navigation Bar -->
-      <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-        <a href="#/students" class="nav-link active">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Students</span>
-        </a>
-        <a href="#/rankings" class="nav-link">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Rankings</span>
-        </a>
-      </nav>
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <a href="#/students" class="nav-link active">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Students</span>
+      </a>
+      <a href="#/rankings" class="nav-link">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Rankings</span>
+      </a>
+    </nav>
 
-      <!-- Footer -->
-      <footer class="app-footer">
+    <!-- Footer (100% Full Viewport Width) -->
+    <footer class="app-footer">
+      <div class="footer-inner">
         <div>Department of Physics · University of Dhaka</div>
         <div class="num">104 Peer Review System · Privacy & Anonymity Enforced</div>
-      </footer>
-    </div>
+      </div>
+    </footer>
 
     <!-- Student Profile Modal -->
     <div id="profile-modal" class="modal-overlay">
