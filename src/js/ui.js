@@ -116,7 +116,7 @@ export function renderHeader() {
 }
 
 /**
- * Render Metric / Stats Strip
+ * Render Metric / Stats Strip (Scientific Measurement Panels)
  */
 export function renderStats() {
   const { students, aggregates } = getState();
@@ -136,64 +136,70 @@ export function renderStats() {
     totalStudents > 0 ? Math.min(100, Math.round((totalRatings / totalStudents) * 100)) : 0;
 
   container.innerHTML = `
-    <div class="stat-box highlight">
+    <div class="stat-box">
+      <div class="stat-box-index">01 / STUDENTS</div>
+      <div class="stat-number">${totalStudents}</div>
       <div class="stat-label">${strings.stats.students}</div>
-      <div class="stat-number num">${totalStudents}</div>
-      <div class="stat-subtext">Active 104 Batch Directory</div>
+      <div class="stat-subtext">Active Batch Directory</div>
     </div>
     <div class="stat-box">
+      <div class="stat-box-index">02 / EVALUATIONS</div>
+      <div class="stat-number">${totalRatings}</div>
       <div class="stat-label">${strings.stats.ratings}</div>
-      <div class="stat-number num">${totalRatings}</div>
-      <div class="stat-subtext">Anonymous Peer Evaluations</div>
+      <div class="stat-subtext">Anonymous Peer Ratings</div>
     </div>
     <div class="stat-box">
+      <div class="stat-box-index">03 / REVIEWS</div>
+      <div class="stat-number">${totalReviews}</div>
       <div class="stat-label">${strings.stats.reviews}</div>
-      <div class="stat-number num">${totalReviews}</div>
-      <div class="stat-subtext">Visible Written Feedback</div>
+      <div class="stat-subtext">Visible Written Notes</div>
     </div>
     <div class="stat-box">
+      <div class="stat-box-index">04 / CONSENSUS</div>
+      <div class="stat-number">${participationRate}%</div>
       <div class="stat-label">${strings.stats.participation}</div>
-      <div class="stat-number num">${participationRate}%</div>
       <div class="stat-subtext">Batch Consensus Metric</div>
     </div>
   `;
 }
 
 /**
- * Render Student Cards Grid
+ * Render Student Cards Grid (Designed Identity Index)
  */
 export function renderStudentGrid() {
   const container = document.getElementById("student-grid-container");
   if (!container) return;
 
   const filtered = getFilteredStudents();
-  const { aggregates, userSubmittedRatingIds, user } = getState();
+  const { aggregates, userSubmittedRatingIds } = getState();
 
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
-        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <div class="empty-state-title">${strings.directory.noResults}</div>
-        <p class="empty-state-desc">Try refining your search keyword or clearing the filters.</p>
+        <p class="empty-state-desc">No students match your query. Try a different search term or filter.</p>
       </div>
     `;
     return;
   }
 
   container.innerHTML = filtered
-    .map((student) => {
+    .map((student, idx) => {
       const agg = aggregates[student.id];
       const overall = agg ? agg.overallAverage : null;
       const count = agg ? agg.ratingCount || 0 : 0;
       const scoreFormatted = formatScore(overall);
       const isRated = userSubmittedRatingIds.has(student.id);
+      const indexStr = String(idx + 1).padStart(2, "0");
 
       return `
       <div class="student-card" data-student-id="${student.id}" tabindex="0" role="button" aria-label="View profile of ${escapeHTML(student.name)}">
-        <div class="card-header">
+        <div class="card-top-row">
+          <span class="card-index">${indexStr}</span>
           <div class="student-avatar" id="avatar-${student.id}">
             ${
               student.imageUrl
@@ -207,18 +213,22 @@ export function renderStudentGrid() {
           </div>
         </div>
 
+        <div class="card-metric-divider"></div>
+
         <div class="card-score-row">
           <div class="score-display">
-            <span class="score-val num">${scoreFormatted.display}</span>
+            <span class="score-val">${scoreFormatted.display}</span>
             <span class="score-denom">/ 4</span>
           </div>
-          <div class="rating-count num">${count} ${count === 1 ? "rating" : "ratings"}</div>
+          <div class="rating-count">${count} ${count === 1 ? "rating" : "ratings"}</div>
         </div>
 
         <div class="card-footer-action">
-          ${isRated ? `<span style="color:var(--status-success-text); font-size:11.5px; font-weight:600; margin-right:auto;">✓ Rated</span>` : ""}
-          <span>View Profile</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          ${isRated ? `<span class="rated-status-tag">✓ Rated</span>` : `<span></span>`}
+          <span class="inspect-link-text">
+            <span>Inspect</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </span>
         </div>
       </div>
     `;
@@ -284,7 +294,7 @@ export async function openStudentProfile(student) {
   const modalContent = document.getElementById("profile-modal-content");
   if (!modal || !modalContent) return;
 
-  // Criteria breakdown HTML
+  // Criteria breakdown HTML with calibrated measurement gauges
   const criteriaHtml = criteria
     .filter((c) => c.active)
     .map((c) => {
@@ -295,7 +305,7 @@ export async function openStudentProfile(student) {
       <div class="criterion-row">
         <div class="criterion-header">
           <span class="criterion-name">${escapeHTML(c.name)}</span>
-          <span class="criterion-score-val num">${avgVal !== null ? avgVal.toFixed(2) : "—"} / ${c.maxScore ?? 4}</span>
+          <span class="criterion-score-val">${avgVal !== null ? avgVal.toFixed(2) : "—"} / ${c.maxScore ?? 4}</span>
         </div>
         <div class="criterion-bar-bg">
           <div class="criterion-bar-fill" style="width: ${pct}%;"></div>
@@ -310,7 +320,7 @@ export async function openStudentProfile(student) {
   if (user && user.canSubmitRating) {
     if (isAlreadyRated) {
       ratingActionHtml = `
-        <div style="padding: 10px 14px; background: var(--status-success-bg); border: 1px solid var(--status-success-border); color: var(--status-success-text); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+        <div style="padding: 10px 14px; background: var(--status-success-bg); border: 1px solid var(--status-success-border); color: var(--status-success-text); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
           ${strings.profile.alreadyRatedBadge}
         </div>
@@ -324,7 +334,7 @@ export async function openStudentProfile(student) {
     }
   } else if (user && user.isDepartment) {
     ratingActionHtml = `
-      <div style="padding: 8px 12px; background: var(--bg-surface-subtle); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-tertiary);">
+      <div style="padding: 8px 12px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-tertiary); text-align: center;">
         ${strings.profile.viewOnlyNotice}
       </div>
     `;
@@ -343,15 +353,15 @@ export async function openStudentProfile(student) {
         <h2 class="profile-name">${escapeHTML(student.name)}</h2>
         <div class="profile-roll">DU Roll: ${escapeHTML(student.roll)}</div>
         <div class="profile-metric-badge">
-          <span style="font-size:16px; font-weight:700;" class="num">${scoreFormatted.display}</span>
-          <span style="font-size:12px; color:var(--text-tertiary);" class="num">/ 4.00</span>
-          <span style="font-size:12px; color:var(--text-tertiary);">(${count} ratings)</span>
+          <span style="font-size:15px; font-weight:700; font-family:var(--font-mono);">${scoreFormatted.display}</span>
+          <span style="font-size:11.5px; color:var(--text-tertiary); font-family:var(--font-mono);">/ 4.00</span>
+          <span style="font-size:11.5px; color:var(--text-tertiary); margin-left: 4px;">(${count} ${count === 1 ? "rating" : "ratings"})</span>
         </div>
       </div>
     </div>
 
     <div style="margin-bottom: var(--space-6);">
-      <h3 style="font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:var(--space-3);">
+      <h3 style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-tertiary); margin-bottom:var(--space-3);">
         ${strings.profile.criteriaHeading}
       </h3>
       <div class="criteria-list">
@@ -366,7 +376,7 @@ export async function openStudentProfile(student) {
     <div class="reviews-section">
       <div class="reviews-section-title">
         <span>${strings.profile.reviewsHeading}</span>
-        <span id="review-count-badge" class="num" style="font-size:12px; font-weight:normal; color:var(--text-tertiary);">Loading...</span>
+        <span id="review-count-badge" style="font-size:11px; font-family:var(--font-mono); font-weight:normal; color:var(--text-tertiary);">Loading...</span>
       </div>
       <div id="student-reviews-container">
         <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 13px;">Loading anonymous reviews...</div>
@@ -390,7 +400,7 @@ export async function openStudentProfile(student) {
     if (countBadge) countBadge.textContent = `${reviews.length} written`;
     if (reviews.length === 0) {
       reviewsContainer.innerHTML = `
-        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 13px;">
+        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px;">
           ${strings.profile.noReviewsYet}
         </div>
       `;
@@ -409,7 +419,7 @@ export async function openStudentProfile(student) {
 }
 
 /**
- * Open and Setup Rating Form Modal
+ * Open and Setup Rating Form Modal (Star-Based Gamified & Precise Interaction)
  */
 export function openRatingModal(student) {
   const { criteria } = getState();
@@ -421,35 +431,65 @@ export function openRatingModal(student) {
   document.getElementById("rating-modal-target-name").textContent = student.name;
   document.getElementById("rating-modal-target-roll").textContent = `Roll ${student.roll}`;
 
-  // Build criteria score selector buttons
+  // Build star ratings for each active criterion
   const formHtml = activeCriteria
     .map((c) => {
       const min = c.minScore ?? -1;
       const max = c.maxScore ?? 4;
-      const options = [];
+      const starButtons = [];
+
       for (let s = min; s <= max; s++) {
-        options.push(
-          `<button type="button" class="score-btn" data-criterion-id="${c.id}" data-score="${s}">${s}</button>`
-        );
+        starButtons.push(`
+          <button 
+            type="button" 
+            class="star-rating-btn" 
+            data-criterion-id="${c.id}" 
+            data-score="${s}"
+            title="Score: ${s > 0 ? "+" + s : s}"
+            aria-label="Score ${s} for ${escapeHTML(c.name)}"
+          >
+            <svg viewBox="0 0 24 24" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span class="star-val">${s > 0 ? "+" + s : s}</span>
+          </button>
+        `);
       }
 
       return `
-      <div class="rating-form-criterion">
-        <div class="rating-criterion-title">${escapeHTML(c.name)}</div>
-        <div class="score-options" id="score-group-${c.id}">
-          ${options.join("")}
+      <div class="rating-criterion-card" id="criterion-card-${c.id}">
+        <div class="rating-criterion-header">
+          <div class="rating-criterion-title">${escapeHTML(c.name)}</div>
+          <div class="rating-criterion-status" id="criterion-status-${c.id}">Not rated</div>
+        </div>
+        <div class="star-rating-row" id="star-row-${c.id}">
+          ${starButtons.join("")}
         </div>
       </div>
     `;
     })
     .join("");
 
-  formContent.innerHTML = formHtml;
+  formContent.innerHTML = `
+    <div class="rating-progress-container">
+      <div class="rating-progress-meta">
+        <span id="rating-progress-label">Evaluated 0 of ${activeCriteria.length} dimensions</span>
+        <span id="rating-progress-percent">0%</span>
+      </div>
+      <div class="rating-progress-bar-bg">
+        <div id="rating-progress-bar-fill" class="rating-progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+    ${formHtml}
+  `;
 
   // Rating form state
   const currentScores = {};
   const submitBtn = document.getElementById("btn-submit-rating");
-  if (submitBtn) submitBtn.disabled = true;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submit Anonymous Rating";
+  }
 
   const charCounter = document.getElementById("review-char-count");
   const reviewInput = document.getElementById("rating-review-text");
@@ -466,23 +506,73 @@ export function openRatingModal(student) {
     });
   }
 
-  // Handle score button selections
-  formContent.querySelectorAll(".score-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const cId = btn.getAttribute("data-criterion-id");
+  // Update progress bar & submit button state
+  function updateEvaluationProgress() {
+    const scoredCount = Object.keys(currentScores).length;
+    const total = activeCriteria.length;
+    const pct = total > 0 ? Math.round((scoredCount / total) * 100) : 0;
+
+    const labelEl = document.getElementById("rating-progress-label");
+    const pctEl = document.getElementById("rating-progress-percent");
+    const barEl = document.getElementById("rating-progress-bar-fill");
+
+    if (labelEl) labelEl.textContent = `Evaluated ${scoredCount} of ${total} dimensions`;
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (barEl) barEl.style.width = `${pct}%`;
+
+    const allScored = activeCriteria.every((c) => currentScores[c.id] !== undefined);
+    if (submitBtn) submitBtn.disabled = !allScored;
+  }
+
+  // Handle star ratings: hover preview & selection
+  activeCriteria.forEach((c) => {
+    const row = document.getElementById(`star-row-${c.id}`);
+    if (!row) return;
+
+    const buttons = Array.from(row.querySelectorAll(".star-rating-btn"));
+
+    buttons.forEach((btn, btnIdx) => {
       const scoreVal = parseInt(btn.getAttribute("data-score"), 10);
 
-      // Deselect siblings
-      const group = document.getElementById(`score-group-${cId}`);
-      group?.querySelectorAll(".score-btn").forEach((b) => b.classList.remove("selected"));
+      // Mouse enter: preview stars up to hovered button
+      btn.addEventListener("mouseenter", () => {
+        buttons.forEach((b, idx) => {
+          if (idx <= btnIdx) {
+            b.classList.add("hovered");
+          } else {
+            b.classList.remove("hovered");
+          }
+        });
+      });
 
-      // Select this
-      btn.classList.add("selected");
-      currentScores[cId] = scoreVal;
+      // Click: set selection
+      btn.addEventListener("click", () => {
+        currentScores[c.id] = scoreVal;
 
-      // Check if all active criteria scored
-      const allScored = activeCriteria.every((c) => currentScores[c.id] !== undefined);
-      if (submitBtn) submitBtn.disabled = !allScored;
+        // Update selected classes across buttons in row
+        buttons.forEach((b, idx) => {
+          if (idx <= btnIdx) {
+            b.classList.add("selected");
+          } else {
+            b.classList.remove("selected");
+          }
+        });
+
+        // Update status label
+        const statusEl = document.getElementById(`criterion-status-${c.id}`);
+        if (statusEl) {
+          statusEl.classList.add("rated");
+          const sign = scoreVal > 0 ? "+" : "";
+          statusEl.textContent = `Selected: ${sign}${scoreVal} / 4`;
+        }
+
+        updateEvaluationProgress();
+      });
+    });
+
+    // Mouse leave row: clear hover states
+    row.addEventListener("mouseleave", () => {
+      buttons.forEach((b) => b.classList.remove("hovered"));
     });
   });
 
@@ -500,7 +590,7 @@ export function openRatingModal(student) {
       });
 
       closeModal("rating-modal");
-      showToast(strings.ratingModal.ratingRecorded, "success", 6000);
+      showToast(strings.ratingModal.ratingRecorded, "success", 5000);
 
       // Re-render UI
       renderStats();
@@ -519,7 +609,7 @@ export function openRatingModal(student) {
 }
 
 /**
- * Render Rankings Measurement View
+ * Render Rankings Measurement View (Scientific Measurement Index)
  */
 export function renderRankings() {
   const container = document.getElementById("rankings-container");
@@ -531,6 +621,7 @@ export function renderRankings() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-title">${strings.rankings.emptyRankings}</div>
+        <p class="empty-state-desc">Evaluations have not yet been recorded for batch rankings computation.</p>
       </div>
     `;
     return;
@@ -549,7 +640,7 @@ export function renderRankings() {
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="student-avatar" style="width: 32px; height: 32px; font-size: 12px;">
+            <div class="student-avatar" style="width: 32px; height: 32px; font-size: 11.5px;">
               ${
                 item.student.imageUrl
                   ? `<img src="${escapeHTML(item.student.imageUrl)}" alt="${escapeHTML(item.student.name)}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${getInitials(item.student.name)}'"/>`
@@ -557,15 +648,15 @@ export function renderRankings() {
               }
             </div>
             <div>
-              <div style="font-weight: 600;">${escapeHTML(item.student.name)}</div>
+              <div style="font-weight: 600; font-size: 13.5px;">${escapeHTML(item.student.name)}</div>
               <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary);">Roll ${escapeHTML(item.student.roll)}</div>
             </div>
           </div>
         </td>
-        <td class="num" style="font-weight: 700; font-size: 15px;">
+        <td style="font-weight: 700; font-size: 14px; font-family: var(--font-mono);">
           ${scoreFormatted.display} <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">/ 4</span>
         </td>
-        <td class="num" style="color: var(--text-secondary);">
+        <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">
           ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}
         </td>
       </tr>
@@ -578,10 +669,10 @@ export function renderRankings() {
       <table class="rankings-table">
         <thead>
           <tr>
-            <th>${strings.rankings.rankHeader}</th>
-            <th>${strings.rankings.studentHeader}</th>
-            <th>${strings.rankings.overallHeader}</th>
-            <th>${strings.rankings.ratingsHeader}</th>
+            <th style="width: 64px;">INDEX</th>
+            <th>STUDENT IDENTIFIER</th>
+            <th style="width: 160px;">PERCEPTION MEAN</th>
+            <th style="width: 140px;">SAMPLE SIZE</th>
           </tr>
         </thead>
         <tbody>
