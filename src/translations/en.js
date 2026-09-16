@@ -43,10 +43,10 @@ export const strings = {
     notRatedYet: "Not rated yet",
     totalRatings: "ratings",
     criteriaHeading: "Evaluation Dimensions",
-    reviewsHeading: "Anonymous Peer Reviews",
+    reviewsHeading: "Anonymous Observations",
     noReviewsYet: "No anonymous reviews yet.",
-    rateStudentBtn: "Rate this student",
-    alreadyRatedBadge: "You have already rated this student",
+    rateStudentBtn: "Rate this classmate",
+    alreadyRatedBadge: "You have already rated this classmate",
     viewOnlyNotice: "Rating is reserved for verified 2024 batch students.",
   },
   ratingModal: {
