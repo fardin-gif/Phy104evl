@@ -5,7 +5,7 @@
   padding: 0 var(--space-4);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex: 1 0 auto;
   position: relative;
 }
 
@@ -21,8 +21,9 @@
   }
 }
 
-/* Scientific Masthead / Header */
+/* Scientific Masthead / Header - 100% Full Viewport Width */
 .app-header {
+  width: 100%;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
   position: sticky;
@@ -33,10 +34,26 @@
 }
 
 .header-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 60px;
+}
+
+@media (min-width: 768px) {
+  .header-inner {
+    padding: 0 var(--space-6);
+  }
+}
+
+@media (min-width: 1200px) {
+  .header-inner {
+    padding: 0 var(--space-8);
+  }
 }
 
 .brand-section {
@@ -197,11 +214,20 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Footer */
+/* Footer - 100% Full Viewport Width */
 .app-footer {
+  width: 100%;
   border-top: 1px solid var(--border-subtle);
-  padding: var(--space-6) 0;
+  background: var(--bg-surface);
   margin-top: auto;
+  padding: var(--space-6) 0;
+}
+
+.footer-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
   font-size: 12px;
   color: var(--text-tertiary);
   display: flex;
@@ -212,7 +238,19 @@
 }
 
 @media (min-width: 640px) {
-  .app-footer {
+  .footer-inner {
     flex-direction: row;
+  }
+}
+
+@media (min-width: 768px) {
+  .footer-inner {
+    padding: 0 var(--space-6);
+  }
+}
+
+@media (min-width: 1200px) {
+  .footer-inner {
+    padding: 0 var(--space-8);
   }
 }
