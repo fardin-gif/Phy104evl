@@ -11,6 +11,9 @@ import { hasUserRatedStudent, submitRating } from "./ratings.js";
 import { calculateRankings } from "./rankings.js";
 import { fetchUserDeviceSessions, revokeDeviceSession } from "./deviceSessions.js";
 import { logoutUser } from "./auth.js";
+import { getFirebaseDb } from "./firebase.js";
+import { doc, getDoc } from "firebase/firestore";
+import { isFirebaseConfigured } from "./config.js";
 
 /**
  * Toast Notification System
@@ -246,13 +249,36 @@ export function renderStudentGrid() {
  */
 export async function openStudentProfile(student) {
   setState({ activeStudentProfile: student });
-  const { aggregates, criteria, user, userSubmittedRatingIds } = getState();
-  const agg = aggregates[student.id];
+  let { aggregates, criteria, user, userSubmittedRatingIds } = getState();
+  let agg = aggregates[student.id];
+
+  // If aggregate is missing from local state, fetch from Firestore
+  if (!agg) {
+    const db = getFirebaseDb();
+    if (isFirebaseConfigured() && db) {
+      try {
+        const aggSnap = await getDoc(doc(db, "aggregates", student.id));
+        if (aggSnap.exists()) {
+          agg = aggSnap.data();
+          aggregates = { ...aggregates, [student.id]: agg };
+          setState({ aggregates });
+        }
+      } catch (e) {
+        console.warn("Could not fetch aggregate for student profile:", e);
+      }
+    }
+  }
+
+  // Check if current user has already rated this student
+  let isAlreadyRated = userSubmittedRatingIds.has(student.id);
+  if (!isAlreadyRated && user && user.uid) {
+    isAlreadyRated = await hasUserRatedStudent(user.uid, student.id);
+  }
+
   const overall = agg ? agg.overallAverage : null;
   const count = agg ? agg.ratingCount || 0 : 0;
   const scoreFormatted = formatScore(overall);
   const criterionAverages = agg ? agg.criterionAverages || {} : {};
-  const isAlreadyRated = userSubmittedRatingIds.has(student.id);
 
   const modal = document.getElementById("profile-modal");
   const modalContent = document.getElementById("profile-modal-content");
@@ -479,6 +505,9 @@ export function openRatingModal(student) {
       // Re-render UI
       renderStats();
       renderStudentGrid();
+
+      // Immediately reopen the student profile to display the updated rating and review
+      openStudentProfile(student);
     } catch (err) {
       showToast(err.message || strings.toasts.genericError, "error");
       submitBtn.disabled = false;
