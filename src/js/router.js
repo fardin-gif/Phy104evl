@@ -34,7 +34,7 @@ function handleRouteChange() {
   // Authenticated: show main app views
   if (authView) authView.style.display = "none";
   if (appViewsContainer) appViewsContainer.style.display = "block";
-  if (mobileNav) mobileNav.style.display = "flex";
+  if (mobileNav) mobileNav.style.display = ""; // Let CSS media query control display (flex on mobile, none on desktop)
 
   // Navigation tabs state
   document.querySelectorAll(".nav-link").forEach((link) => {
