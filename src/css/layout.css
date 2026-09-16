@@ -246,6 +246,25 @@
   justify-content: space-between;
 }
 
+.footer-credit {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.footer-credit a {
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-default);
+  transition: color var(--duration-fast) ease, text-decoration-color var(--duration-fast) ease;
+}
+
+.footer-credit a:hover {
+  color: var(--accent-primary);
+  text-decoration-color: var(--accent-primary);
+}
+
 @media (min-width: 640px) {
   .footer-inner {
     flex-direction: row;
