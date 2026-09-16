@@ -56,29 +56,29 @@
   </style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-inner">
-        <div class="brand-section">
-          <div class="brand-badge">104</div>
-          <div class="brand-title">
-            <span class="brand-main">PHYSICS · DU</span>
-            <span class="brand-sub">Administration & Moderation</span>
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <a href="/" class="btn btn-ghost btn-sm" style="font-size: 12px;">
-            ← Return to App
-          </a>
-          <span id="admin-user-email" class="num" style="font-size: 12px; color: var(--text-tertiary);"></span>
-          <button id="admin-logout-btn" class="btn btn-ghost btn-sm" style="display: none; color: var(--status-danger-text);">
-            Sign Out
-          </button>
+  <!-- Header (100% Full Viewport Width) -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-badge">104</div>
+        <div class="brand-title">
+          <span class="brand-main">PHYSICS · DU</span>
+          <span class="brand-sub">Administration & Moderation</span>
         </div>
       </div>
-    </header>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" class="btn btn-ghost btn-sm" style="font-size: 12px;">
+          ← Return to App
+        </a>
+        <span id="admin-user-email" class="num" style="font-size: 12px; color: var(--text-tertiary);"></span>
+        <button id="admin-logout-btn" class="btn btn-ghost btn-sm" style="display: none; color: var(--status-danger-text);">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </header>
 
+  <div class="app-container">
     <!-- Main Content -->
     <main class="app-main">
       <!-- Admin Login Section -->
@@ -128,13 +128,15 @@
         </div>
       </section>
     </main>
+  </div>
 
-    <!-- Footer -->
-    <footer class="app-footer">
+  <!-- Footer (100% Full Viewport Width) -->
+  <footer class="app-footer">
+    <div class="footer-inner">
       <div>Department of Physics · University of Dhaka</div>
       <div class="num">Batch 104 Peer Review Administration</div>
-    </footer>
-  </div>
+    </div>
+  </footer>
 
   <!-- Admin Student Modal (Add / Edit) -->
   <div id="admin-student-modal" class="modal-overlay">
