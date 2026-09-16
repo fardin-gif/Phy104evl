@@ -42,8 +42,8 @@
           <div class="brand-section">
             <div class="brand-badge">104</div>
             <div class="brand-title">
-              <span class="brand-main">PHYSICS · DU</span>
-              <span class="brand-sub">Peer Review</span>
+              <span class="brand-main">PHYSICS · UNIVERSITY OF DHAKA</span>
+              <span class="brand-sub">Peer Review System</span>
             </div>
           </div>
 
@@ -56,10 +56,6 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               <span class="nav-text">Rankings</span>
             </a>
-            <a href="/admin/index.html" class="nav-link" style="color: var(--text-tertiary);" title="Administration">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/></svg>
-              <span class="nav-text">Admin</span>
-            </a>
           </nav>
 
           <div class="header-actions" id="header-auth-section">
@@ -71,18 +67,18 @@
       <!-- Main Content Container -->
       <main class="app-main">
         <!-- Authentication View (Category A: Unauthenticated Visitor) -->
-        <section id="view-auth" class="page-view" style="max-width: 480px; margin: 40px auto 0; padding: var(--space-6) var(--space-8); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
-          <div style="margin-bottom: var(--space-6);">
-            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background: var(--accent-subtle); color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border-radius: var(--radius-xs); margin-bottom: 8px;">
-              <span>DEPARTMENT OF PHYSICS</span>
-              <span>·</span>
+        <section id="view-auth" class="page-view auth-card-container">
+          <div class="auth-header-block">
+            <div class="auth-institution-badge">
+              <span>PHYSICS</span>
+              <span class="badge-separator">·</span>
               <span>BATCH 104</span>
             </div>
-            <h1 style="font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;">
-              Private Peer Review System
+            <h1 class="auth-title">
+              Peer Review Access
             </h1>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
-              Enter your official University of Dhaka Physics Department email to verify student status. A secure passwordless link will be generated.
+            <p class="auth-description">
+              Authenticate using your official University of Dhaka Physics Department email. A secure passwordless link will be generated.
             </p>
           </div>
 
@@ -97,30 +93,30 @@
                 required 
                 autocomplete="email"
               />
-              <div class="form-help">Exact format: <span class="num">s-</span> followed by 10 digits <span class="num">@phy.du.ac.bd</span></div>
+              <div class="form-help">Format: <span class="num">s-</span> + 10 digits + <span class="num">@phy.du.ac.bd</span></div>
             </div>
 
             <div id="auth-error-msg" style="display: none; padding: 10px 14px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: var(--space-4);"></div>
 
             <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-lg" style="width: 100%;">
-              Send Sign-In Link
+              Continue with Email Link →
             </button>
           </form>
 
           <div id="auth-sent-feedback" style="display: none; margin-top: var(--space-4); padding: 12px 14px; background: var(--status-info-bg); border: 1px solid var(--status-info-border); color: var(--status-info-text); border-radius: var(--radius-sm); font-size: 13px;">
-            <div style="font-weight: 600; margin-bottom: 2px;">Verification Link Dispatched</div>
-            <div>Please open the link sent to your university inbox to complete sign-in.</div>
+            <div style="font-weight: 600; margin-bottom: 2px;">Check Your University Email</div>
+            <div>We've sent a secure, single-use authentication link to your inbox.</div>
           </div>
         </section>
 
         <!-- Authenticated Application Content (Categories B & C) -->
         <div id="main-authenticated-content" style="display: none;">
           <!-- Subtitle Heading -->
-          <div style="margin-bottom: var(--space-6);">
-            <div style="font-size: 11.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary);">
+          <div class="overview-header-group">
+            <div class="overview-eyebrow">
               PEER EVALUATION ARCHITECTURE
             </div>
-            <h1 style="font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">
+            <h1 class="overview-title">
               How does the batch see itself?
             </h1>
           </div>
@@ -139,7 +135,7 @@
                   type="text" 
                   id="directory-search-input" 
                   class="search-input" 
-                  placeholder="Search students by name or roll..."
+                  placeholder="Search student index by name or roll..."
                 />
               </div>
               <div class="filter-actions">
@@ -156,12 +152,12 @@
 
           <!-- View 2: Rankings Table -->
           <section id="view-rankings" class="page-view" style="display: none;">
-            <div style="margin-bottom: var(--space-4);">
-              <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary);">
-                Batch Rankings
+            <div class="rankings-header-block">
+              <h2 class="rankings-title">
+                Batch Measurement Index
               </h2>
-              <p style="font-size: 12.5px; color: var(--text-secondary);">
-                Peer perception measurement computed as the arithmetic mean of all submitted scores across all dimensions.
+              <p class="rankings-subtitle">
+                Peer perception index computed from aggregate arithmetic means across evaluated dimensions.
               </p>
             </div>
 
@@ -171,6 +167,18 @@
           </section>
         </div>
       </main>
+
+      <!-- Mobile Bottom Navigation Bar -->
+      <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <a href="#/students" class="nav-link active">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Students</span>
+        </a>
+        <a href="#/rankings" class="nav-link">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Rankings</span>
+        </a>
+      </nav>
 
       <!-- Footer -->
       <footer class="app-footer">
