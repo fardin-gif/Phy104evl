@@ -216,7 +216,26 @@ export async function loadAdminData() {
       const criteria = [];
       snap.forEach((d) => criteria.push({ id: d.id, ...d.data() }));
       criteria.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
-      adminState.criteria = criteria.length ? criteria : [...DEFAULT_CRITERIA_SEED];
+      if (criteria.length > 0) {
+        adminState.criteria = criteria;
+      } else {
+        // Seed default criteria to Firestore so each document exists as a document
+        for (const c of DEFAULT_CRITERIA_SEED) {
+          try {
+            await setDoc(
+              doc(db, "criteria", c.id),
+              {
+                ...c,
+                createdAt: serverTimestamp(),
+              },
+              { merge: true }
+            );
+          } catch (seedErr) {
+            console.warn("Could not seed criterion to Firestore:", seedErr);
+          }
+        }
+        adminState.criteria = [...DEFAULT_CRITERIA_SEED];
+      }
     } catch (e) {
       adminState.criteria = [...DEFAULT_CRITERIA_SEED];
     }
@@ -424,7 +443,15 @@ function renderStudentsTab(container) {
 
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "students", id), { active: newStatus, updatedAt: serverTimestamp() });
+        await setDoc(
+          doc(db, "students", id),
+          {
+            ...student,
+            active: newStatus,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
       }
 
       renderStudentsTab(container);
@@ -598,7 +625,15 @@ function renderCriteriaTab(container) {
       crit.active = !crit.active;
       const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
-        await updateDoc(doc(db, "criteria", id), { active: crit.active, updatedAt: serverTimestamp() });
+        await setDoc(
+          doc(db, "criteria", id),
+          {
+            ...crit,
+            active: crit.active,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
       }
       renderCriteriaTab(container);
     });
@@ -940,6 +975,7 @@ function setupAdminEventListeners() {
         createdAt: new Date().toISOString(),
       };
 
+      const db = getFirebaseDb();
       if (isFirebaseConfigured() && db) {
         await setDoc(doc(db, "criteria", newId), {
           ...newCrit,
@@ -959,12 +995,13 @@ function setupAdminEventListeners() {
             <div style="font-weight: 600; margin-bottom: 4px;">Firestore Permission Denied</div>
             <div>Please ensure your Firestore security rules allow write access to the <code>criteria</code> collection (<code>allow read, write: if true;</code>).</div>
           `;
+          showAdminToast("Firestore Permission Denied.", "error", 5000);
         } else {
           critErrorEl.textContent = "Error saving criterion: " + (err.message || "Failed to persist");
+          showAdminToast(err.message || "Error saving criterion", "error", 5000);
         }
         critErrorEl.style.display = "block";
       }
-      showAdminToast("Firestore Permission Denied.", "error", 5000);
       return;
     } finally {
       if (saveBtn) saveBtn.disabled = false;
