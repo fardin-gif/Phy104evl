@@ -60,7 +60,18 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-section">
-        <div class="brand-badge">104</div>
+        <img 
+          id="du-logo-img-admin"
+          class="brand-logo-img" 
+          src="/assets/du-logo.png" 
+          alt="Dhaka University Logo" 
+          width="36" 
+          height="36" 
+          loading="eager"
+          decoding="async"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+        />
+        <div class="brand-badge" style="display: none;" title="Batch 104">104</div>
         <div class="brand-title">
           <span class="brand-main">PHYSICS · DU</span>
           <span class="brand-sub">Administration & Moderation</span>
@@ -121,6 +132,7 @@
           <button class="admin-tab-btn" data-tab="criteria">Criteria</button>
           <button class="admin-tab-btn" data-tab="reviews">Review Moderation</button>
           <button class="admin-tab-btn" data-tab="exports">Data Exports</button>
+          <button class="admin-tab-btn" data-tab="email">Email Template</button>
         </nav>
 
         <div id="admin-tab-content">
