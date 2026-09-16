@@ -8,7 +8,7 @@ html[data-theme="dark"] {
 }
 
 /* Smooth transition when changing theme */
-body, .app-header, .stat-box, .student-card, .modal-container, .rankings-table-wrapper {
+body, .app-header, .app-footer, .stat-box, .student-card, .modal-container, .rankings-table-wrapper {
   transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
