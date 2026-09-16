@@ -8,7 +8,7 @@ import {
   handleEmailLinkCallback 
 } from "./auth.js";
 import { loadStudents } from "./students.js";
-import { loadCriteria } from "./ratings.js";
+import { loadCriteria, loadAggregates, loadUserSubmittedRatings } from "./ratings.js";
 import { 
   renderHeader, 
   renderStats, 
@@ -60,7 +60,12 @@ async function bootstrap() {
   // Listen to Auth State
   initAuthListener(async (user) => {
     if (user && user.canViewData) {
-      await Promise.all([loadStudents(), loadCriteria()]);
+      await Promise.all([
+        loadStudents(), 
+        loadCriteria(), 
+        loadAggregates(),
+        loadUserSubmittedRatings(user.uid)
+      ]);
       renderStats();
       renderStudentGrid();
     }
