@@ -1,4 +1,11 @@
-/* Buttons */
+/* ==========================================================================
+   DU Physics 104 — Design System Components
+   Scientific Instrument × Editorial Design × Premium SaaS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Buttons
+   -------------------------------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -6,17 +13,22 @@
   gap: var(--space-2);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.2;
   white-space: nowrap;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
   border: 1px solid transparent;
   text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -24,9 +36,12 @@
 .btn-primary {
   background-color: var(--accent-primary);
   color: var(--text-inverse);
+  border-color: var(--accent-primary);
 }
+
 .btn-primary:hover:not(:disabled) {
   background-color: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
 }
 
 .btn-secondary {
@@ -34,6 +49,7 @@
   color: var(--text-primary);
   border-color: var(--border-default);
 }
+
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--bg-surface-hover);
   border-color: var(--border-strong);
@@ -43,6 +59,7 @@
   background: transparent;
   color: var(--text-secondary);
 }
+
 .btn-ghost:hover:not(:disabled) {
   color: var(--text-primary);
   background-color: var(--bg-surface-subtle);
@@ -53,21 +70,25 @@
   color: var(--status-danger-text);
   border-color: var(--status-danger-border);
 }
+
 .btn-danger:hover:not(:disabled) {
   background-color: #fee2e2;
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 12px;
 }
 
 .btn-lg {
-  padding: 12px 24px;
-  font-size: 15px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-/* Form Inputs */
+/* --------------------------------------------------------------------------
+   2. Form Controls & Inputs
+   -------------------------------------------------------------------------- */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -76,92 +97,182 @@
 }
 
 .form-label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.02em;
 }
 
-.form-input, .form-textarea, .form-select {
+.form-input, 
+.form-textarea, 
+.form-select {
   width: 100%;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-default);
   background: var(--bg-surface);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
-.form-input:focus, .form-textarea:focus, .form-select:focus {
+.form-input:focus, 
+.form-textarea:focus, 
+.form-select:focus {
   outline: none;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
-.form-input::placeholder, .form-textarea::placeholder {
+.form-input::placeholder, 
+.form-textarea::placeholder {
   color: var(--text-tertiary);
 }
 
 .form-help {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
   margin-top: var(--space-1);
+  font-family: var(--font-mono);
 }
 
-/* Metric / Stat Strip */
+/* --------------------------------------------------------------------------
+   3. Authentication Card (Minimal & Purposeful)
+   -------------------------------------------------------------------------- */
+.auth-card-container {
+  max-width: 440px;
+  margin: 50px auto 0;
+  padding: var(--space-8);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.auth-header-block {
+  margin-bottom: var(--space-6);
+}
+
+.auth-institution-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.auth-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   4. Overview Masthead / Header Group
+   -------------------------------------------------------------------------- */
+.overview-header-group {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.overview-eyebrow {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.overview-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   5. Measurement Statistics Strip (Scientific Metric Panels)
+   -------------------------------------------------------------------------- */
 .stats-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   margin-bottom: var(--space-6);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .stats-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stat-box {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   position: relative;
-  overflow: hidden;
 }
 
-.stat-box::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: var(--border-default);
-}
-
-.stat-box.highlight::after {
-  background: var(--accent-primary);
-}
-
-.stat-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.stat-box-index {
+  font-size: 10px;
+  font-family: var(--font-mono);
   color: var(--text-tertiary);
-  margin-bottom: var(--space-1);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
 }
 
 .stat-number {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1.1;
+  font-family: var(--font-mono);
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-top: var(--space-2);
 }
 
 .stat-subtext {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-secondary);
-  margin-top: var(--space-1);
+  margin-top: 2px;
 }
 
-/* Directory Filter & Search */
+/* --------------------------------------------------------------------------
+   6. Directory Search & Filters
+   -------------------------------------------------------------------------- */
 .directory-controls {
   display: flex;
   flex-direction: column;
@@ -180,7 +291,7 @@
 .search-wrapper {
   position: relative;
   flex: 1;
-  max-width: 480px;
+  max-width: 440px;
 }
 
 .search-icon {
@@ -194,54 +305,104 @@
 
 .search-input {
   width: 100%;
-  padding: 10px 14px 10px 38px;
+  padding: 9px 12px 9px 36px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-default);
   background: var(--bg-surface);
-  font-size: 14px;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
 .filter-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  background: var(--bg-surface-subtle);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
 
-/* Student Cards Grid */
+.filter-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* --------------------------------------------------------------------------
+   7. Student Identity Index / Directory
+   -------------------------------------------------------------------------- */
 .student-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: var(--space-3);
 }
 
 .student-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  transition: transform var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background-color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-standard);
   cursor: pointer;
   position: relative;
+  text-decoration: none;
 }
 
 .student-card:hover {
-  transform: translateY(-2px);
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--bg-surface);
+  transform: translateY(-1px);
 }
 
-.card-header {
+.card-top-row {
   display: flex;
-  gap: var(--space-3);
   align-items: center;
+  gap: var(--space-3);
+}
+
+.card-index {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  width: 22px;
+  flex-shrink: 0;
 }
 
 .student-avatar {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--bg-surface-subtle);
@@ -252,7 +413,7 @@
   font-family: var(--font-mono);
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -269,68 +430,99 @@
 }
 
 .student-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .student-roll {
-  font-size: 12px;
+  font-size: 11.5px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.card-metric-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  width: 100%;
 }
 
 .card-score-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding-top: var(--space-2);
-  border-top: 1px dashed var(--border-subtle);
 }
 
 .score-display {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 3px;
 }
 
 .score-val {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
+  font-family: var(--font-mono);
 }
 
 .score-denom {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
 }
 
 .rating-count {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
 }
 
 .card-footer-action {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--accent-text);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  padding-top: 2px;
 }
 
-/* Modals */
+.rated-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--status-success-text);
+  background: var(--status-success-bg);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--status-success-border);
+}
+
+.inspect-link-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  color: var(--accent-text);
+  margin-left: auto;
+}
+
+/* --------------------------------------------------------------------------
+   8. Modals & Inspector Panels
+   -------------------------------------------------------------------------- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
+  background: rgba(12, 14, 18, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 50;
   display: none;
   align-items: center;
@@ -347,12 +539,18 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 580px;
+  max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+  animation: modalEnter var(--duration-normal) var(--ease-standard);
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-header {
@@ -361,22 +559,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--bg-surface);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .modal-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .modal-close {
+  background: transparent;
+  border: none;
   color: var(--text-tertiary);
-  padding: 4px;
-  border-radius: var(--radius-xs);
+  font-size: 20px;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
 }
+
 .modal-close:hover {
   color: var(--text-primary);
   background: var(--bg-surface-subtle);
@@ -393,21 +604,25 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-3);
+  gap: var(--space-2);
   background: var(--bg-surface-subtle);
 }
 
-/* Profile Detail Layout */
+/* --------------------------------------------------------------------------
+   9. Student Profile Detail Layout
+   -------------------------------------------------------------------------- */
 .profile-hero {
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-4);
   align-items: center;
-  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-5);
 }
 
 .profile-avatar-lg {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-md);
   object-fit: cover;
   background: var(--bg-surface-subtle);
@@ -415,7 +630,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--text-secondary);
@@ -431,17 +646,18 @@
 
 .profile-info {
   flex: 1;
+  min-width: 0;
 }
 
 .profile-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
 
 .profile-roll {
-  font-size: 13px;
+  font-size: 12.5px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
   margin-top: 2px;
@@ -450,37 +666,37 @@
 .profile-metric-badge {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 5px;
   margin-top: 8px;
-  padding: 4px 10px;
+  padding: 3px 8px;
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
 }
 
-/* Criterion breakdown bars */
+/* Criteria Measurement Bars */
 .criteria-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-bottom: var(--space-6);
 }
 
 .criterion-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .criterion-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .criterion-name {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -488,15 +704,17 @@
   font-family: var(--font-mono);
   font-weight: 600;
   color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .criterion-bar-bg {
-  height: 6px;
+  height: 5px;
   width: 100%;
   background: var(--bg-surface-subtle);
   border-radius: var(--radius-full);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
+  position: relative;
 }
 
 .criterion-bar-fill {
@@ -506,66 +724,19 @@
   transition: width var(--duration-normal) var(--ease-standard);
 }
 
-/* Rating Form Interactive Criterion Grid */
-.rating-form-criterion {
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-3);
-}
-
-.rating-criterion-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
-}
-
-.score-options {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.score-btn {
-  flex: 1;
-  min-width: 44px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  transition: all var(--duration-fast);
-}
-
-.score-btn:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-text);
-}
-
-.score-btn.selected {
-  background: var(--accent-primary);
-  color: var(--text-inverse);
-  border-color: var(--accent-primary);
-}
-
-/* Anonymous Reviews Section */
+/* Editorial Reviews Section */
 .reviews-section {
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   border-top: 1px solid var(--border-subtle);
   padding-top: var(--space-5);
 }
 
 .reviews-section-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
   margin-bottom: var(--space-3);
   display: flex;
   align-items: center;
@@ -575,44 +746,218 @@
 .review-item {
   padding: var(--space-3) var(--space-4);
   background: var(--bg-surface-subtle);
-  border-left: 3px solid var(--accent-primary);
+  border-left: 2px solid var(--accent-primary);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin-bottom: var(--space-3);
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-primary);
   font-style: italic;
   line-height: 1.5;
 }
 
-/* Rankings Table */
+/* --------------------------------------------------------------------------
+   10. Star-Based Rating Interactive System
+   (Gamified but Sophisticated)
+   -------------------------------------------------------------------------- */
+.rating-progress-container {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rating-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.rating-progress-bar-bg {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-surface-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.rating-progress-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  transition: width var(--duration-fast) var(--ease-standard);
+}
+
+.rating-criterion-card {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  transition: border-color var(--duration-fast);
+}
+
+.rating-criterion-card:hover {
+  border-color: var(--border-strong);
+}
+
+.rating-criterion-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.rating-criterion-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rating-criterion-status {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.rating-criterion-status.rated {
+  color: var(--accent-text);
+}
+
+.star-rating-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-1);
+}
+
+.star-rating-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-subtle);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  user-select: none;
+}
+
+.star-rating-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-tertiary);
+  fill: transparent;
+  transition: stroke var(--duration-fast), fill var(--duration-fast), transform var(--duration-fast);
+}
+
+.star-rating-btn .star-val {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Hover feedback */
+.star-rating-btn:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-surface);
+}
+
+.star-rating-btn:hover svg {
+  stroke: var(--star-hover);
+  fill: rgba(245, 158, 11, 0.25);
+  transform: scale(1.1);
+}
+
+/* Selected state */
+.star-rating-btn.selected {
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+}
+
+.star-rating-btn.selected svg {
+  stroke: var(--star-filled);
+  fill: var(--star-filled);
+  transform: scale(1.05);
+}
+
+.star-rating-btn.selected .star-val {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+/* Negative score (-1) distinct state */
+.star-rating-btn[data-score="-1"].selected {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger-border);
+}
+
+.star-rating-btn[data-score="-1"].selected svg {
+  stroke: var(--star-negative);
+  fill: var(--star-negative);
+}
+
+.star-rating-btn[data-score="-1"].selected .star-val {
+  color: var(--status-danger-text);
+}
+
+/* --------------------------------------------------------------------------
+   11. Rankings Table (Scientific Measurement Index)
+   -------------------------------------------------------------------------- */
+.rankings-header-block {
+  margin-bottom: var(--space-4);
+}
+
+.rankings-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.rankings-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 .rankings-table-wrapper {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   overflow-x: auto;
 }
 
 .rankings-table {
   width: 100%;
+  border-collapse: collapse;
   text-align: left;
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .rankings-table th {
-  padding: 12px 16px;
-  font-size: 11.5px;
+  padding: 10px 16px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--text-tertiary);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-default);
   background: var(--bg-surface-subtle);
+  font-family: var(--font-mono);
 }
 
 .rankings-table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
+  vertical-align: middle;
 }
 
 .rankings-table tr:last-child td {
@@ -627,14 +972,17 @@
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--text-secondary);
-  width: 60px;
+  font-size: 14px;
+  width: 50px;
 }
 
 .rank-cell.top-rank {
-  color: var(--accent-text);
+  color: var(--text-primary);
 }
 
-/* Toast Container */
+/* --------------------------------------------------------------------------
+   12. Toast Notifications
+   -------------------------------------------------------------------------- */
 .toast-container {
   position: fixed;
   bottom: 24px;
@@ -646,46 +994,56 @@
   pointer-events: none;
 }
 
+@media (max-width: 640px) {
+  .toast-container {
+    bottom: 70px;
+    right: 16px;
+    left: 16px;
+  }
+}
+
 .toast {
   pointer-events: auto;
-  min-width: 280px;
-  max-width: 400px;
-  padding: 12px 16px;
+  min-width: 260px;
+  max-width: 380px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
   color: var(--text-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   border: 1px solid var(--border-default);
-  font-size: 13.5px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  animation: toastIn var(--duration-normal) var(--ease-standard);
+  animation: toastIn var(--duration-fast) var(--ease-standard);
 }
 
 .toast.toast-success {
-  border-left: 4px solid #10b981;
+  border-left: 3px solid #10b981;
 }
 
 .toast.toast-error {
-  border-left: 4px solid #ef4444;
+  border-left: 3px solid #ef4444;
 }
 
 .toast.toast-warning {
-  border-left: 4px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
 }
 
 .toast.toast-info {
-  border-left: 4px solid #3b82f6;
+  border-left: 3px solid var(--accent-primary);
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Empty State */
+/* --------------------------------------------------------------------------
+   13. Empty & Loading States
+   -------------------------------------------------------------------------- */
 .empty-state {
   text-align: center;
   padding: var(--space-12) var(--space-4);
@@ -693,26 +1051,27 @@
 }
 
 .empty-state-icon {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   margin: 0 auto var(--space-3);
   color: var(--text-tertiary);
+  stroke-width: 1.5;
 }
 
 .empty-state-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: var(--space-1);
+  margin-bottom: 2px;
 }
 
 .empty-state-desc {
-  font-size: 13px;
-  max-width: 360px;
+  font-size: 12.5px;
+  max-width: 340px;
   margin: 0 auto;
+  color: var(--text-secondary);
 }
 
-/* Skeleton Loading */
 .skeleton {
   background: linear-gradient(90deg, var(--bg-surface-subtle) 25%, var(--bg-surface-hover) 50%, var(--bg-surface-subtle) 75%);
   background-size: 200% 100%;
