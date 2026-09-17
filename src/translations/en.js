@@ -45,7 +45,7 @@ export const strings = {
     criteriaHeading: "Evaluation Dimensions",
     reviewsHeading: "Anonymous Observations",
     noReviewsYet: "No anonymous reviews yet.",
-    rateStudentBtn: "Rate this classmate",
+    rateStudentBtn: "Rate This Classmate",
     alreadyRatedBadge: "You have already rated this classmate",
     viewOnlyNotice: "Rating is reserved for verified 2024 batch students.",
   },
