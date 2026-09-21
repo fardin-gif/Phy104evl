@@ -13,7 +13,7 @@ import { fetchUserDeviceSessions, revokeDeviceSession } from "./deviceSessions.j
 import { logoutUser } from "./auth.js";
 import { getFirebaseDb } from "./firebase.js";
 import { doc, getDoc } from "firebase/firestore";
-import { isFirebaseConfigured } from "./config.js";
+import { isFirebaseConfigured, APP_CONFIG } from "./config.js";
 
 /**
  * Toast Notification System
@@ -137,24 +137,28 @@ export function renderStats() {
 
   container.innerHTML = `
     <div class="stat-box">
-      <div class="stat-box-index">STUDENTS</div>
+      <div class="stat-box-index">01 / STUDENTS</div>
       <div class="stat-number">${totalStudents}</div>
       <div class="stat-label">${strings.stats.students}</div>
+      <div class="stat-subtext">Active Batch Directory</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">EVALUATIONS</div>
+      <div class="stat-box-index">02 / EVALUATIONS</div>
       <div class="stat-number">${totalRatings}</div>
       <div class="stat-label">${strings.stats.ratings}</div>
+      <div class="stat-subtext">Anonymous Peer Ratings</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">REVIEWS</div>
+      <div class="stat-box-index">03 / REVIEWS</div>
       <div class="stat-number">${totalReviews}</div>
       <div class="stat-label">${strings.stats.reviews}</div>
+      <div class="stat-subtext">Visible Written Notes</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">CONSENSUS</div>
+      <div class="stat-box-index">04 / CONSENSUS</div>
       <div class="stat-number">${participationRate}%</div>
       <div class="stat-label">${strings.stats.participation}</div>
+      <div class="stat-subtext">Batch Consensus Metric</div>
     </div>
   `;
 }
@@ -183,11 +187,14 @@ export function renderStudentGrid() {
     return;
   }
 
+  const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
+
   container.innerHTML = filtered
     .map((student, idx) => {
       const agg = aggregates[student.id];
-      const overall = agg ? agg.overallAverage : null;
       const count = agg ? agg.ratingCount || 0 : 0;
+      const isThresholdMet = count >= threshold;
+      const overall = isThresholdMet && agg ? agg.overallAverage : null;
       const scoreFormatted = formatScore(overall);
       const isRated = userSubmittedRatingIds.has(student.id);
       const indexStr = String(idx + 1).padStart(2, "0");
@@ -213,11 +220,19 @@ export function renderStudentGrid() {
 
         <div class="card-score-row">
           <div class="score-display">
-            <span class="score-val">${scoreFormatted.display}</span>
-            <span class="score-denom">/ 4</span>
+            ${
+              isThresholdMet
+                ? `<span class="score-val">${scoreFormatted.display}</span><span class="score-denom">/ 4</span>`
+                : `<span class="score-val score-val-hidden">—</span>`
+            }
           </div>
           <div class="rating-count">${count} ${count === 1 ? "rating" : "ratings"}</div>
         </div>
+        ${
+          !isThresholdMet
+            ? `<div class="card-threshold-note">${count === 0 ? "No ratings yet" : `${count}/3 ratings — results hidden until 3 submissions`}</div>`
+            : ""
+        }
 
         <div class="card-footer-action">
           ${isRated ? `<span class="rated-status-tag">✓ Rated</span>` : `<span></span>`}
@@ -281,8 +296,10 @@ export async function openStudentProfile(student) {
     isAlreadyRated = await hasUserRatedStudent(user.uid, student.id);
   }
 
-  const overall = agg ? agg.overallAverage : null;
+  const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
   const count = agg ? agg.ratingCount || 0 : 0;
+  const isThresholdMet = count >= threshold;
+  const overall = isThresholdMet && agg ? agg.overallAverage : null;
   const scoreFormatted = formatScore(overall);
   const criterionAverages = agg ? agg.criterionAverages || {} : {};
 
@@ -290,26 +307,34 @@ export async function openStudentProfile(student) {
   const modalContent = document.getElementById("profile-modal-content");
   if (!modal || !modalContent) return;
 
-  // Criteria breakdown HTML with calibrated measurement gauges
-  const criteriaHtml = criteria
-    .filter((c) => c.active)
-    .map((c) => {
-      const avg = criterionAverages[c.id];
-      const avgVal = avg !== undefined && avg !== null ? avg : null;
-      const pct = avgVal !== null ? Math.max(0, Math.min(100, ((avgVal - (c.minScore ?? -1)) / ((c.maxScore ?? 4) - (c.minScore ?? -1))) * 100)) : 0;
-      return `
-      <div class="criterion-row">
-        <div class="criterion-header">
-          <span class="criterion-name">${escapeHTML(c.name)}</span>
-          <span class="criterion-score-val">${avgVal !== null ? avgVal.toFixed(2) : "—"} / ${c.maxScore ?? 4}</span>
-        </div>
-        <div class="criterion-bar-bg">
-          <div class="criterion-bar-fill" style="width: ${pct}%;"></div>
-        </div>
+  // Criteria breakdown HTML with calibrated measurement gauges (only when threshold is met)
+  const criteriaHtml = isThresholdMet
+    ? criteria
+        .filter((c) => c.active)
+        .map((c) => {
+          const avg = criterionAverages[c.id];
+          const avgVal = avg !== undefined && avg !== null ? avg : null;
+          const pct = avgVal !== null ? Math.max(0, Math.min(100, ((avgVal - (c.minScore ?? -1)) / ((c.maxScore ?? 4) - (c.minScore ?? -1))) * 100)) : 0;
+          return `
+          <div class="criterion-row">
+            <div class="criterion-header">
+              <span class="criterion-name">${escapeHTML(c.name)}</span>
+              <span class="criterion-score-val">${avgVal !== null ? avgVal.toFixed(2) : "—"} / ${c.maxScore ?? 4}</span>
+            </div>
+            <div class="criterion-bar-bg">
+              <div class="criterion-bar-fill" style="width: ${pct}%;"></div>
+            </div>
+          </div>
+        `;
+        })
+        .join("")
+    : `
+      <div style="padding: 16px; background: var(--bg-surface-subtle); border: 1px dashed var(--border-default); border-radius: var(--radius-sm); text-align: center; color: var(--text-tertiary); font-size: 12.5px; line-height: 1.5;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 6px; display: block; opacity: 0.6;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <strong style="color: var(--text-secondary); display: block; margin-bottom: 2px;">Evaluation Dimensions Hidden</strong>
+        Currently received <strong>${count} of 3</strong> required ratings. Dimension score averages unlock automatically once 3 classmates have submitted their evaluations.
       </div>
     `;
-    })
-    .join("");
 
   // Rating action button section
   let ratingActionHtml = "";
@@ -349,9 +374,13 @@ export async function openStudentProfile(student) {
         <h2 class="profile-name">${escapeHTML(student.name)}</h2>
         <div class="profile-roll">DU Roll: ${escapeHTML(student.roll)}</div>
         <div class="profile-metric-badge">
-          <span style="font-size:15px; font-weight:700; font-family:var(--font-mono);">${scoreFormatted.display}</span>
-          <span style="font-size:11.5px; color:var(--text-tertiary); font-family:var(--font-mono);">/ 4.00</span>
-          <span style="font-size:11.5px; color:var(--text-tertiary); margin-left: 4px;">(${count} ${count === 1 ? "rating" : "ratings"})</span>
+          ${
+            isThresholdMet
+              ? `<span style="font-size:15px; font-weight:700; font-family:var(--font-mono);">${scoreFormatted.display}</span>
+                 <span style="font-size:11.5px; color:var(--text-tertiary); font-family:var(--font-mono);">/ 4.00</span>`
+              : `<span style="font-size:13px; font-weight:600; color:var(--text-tertiary); font-family:var(--font-mono);">Score Hidden</span>`
+          }
+          <span style="font-size:11.5px; color:var(--text-tertiary); margin-left: 4px;">(${count} ${count === 1 ? "rating" : "ratings"}${!isThresholdMet ? " · min 3 required" : ""})</span>
         </div>
       </div>
     </div>
@@ -393,23 +422,32 @@ export async function openStudentProfile(student) {
   const reviewsContainer = document.getElementById("student-reviews-container");
   const countBadge = document.getElementById("review-count-badge");
   if (reviewsContainer) {
-    if (countBadge) countBadge.textContent = `${reviews.length} written`;
-    if (reviews.length === 0) {
+    if (!isThresholdMet) {
+      if (countBadge) countBadge.textContent = "Locked";
       reviewsContainer.innerHTML = `
-        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px;">
-          ${strings.profile.noReviewsYet}
+        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px; line-height: 1.5;">
+          ${strings.profile.thresholdNotice}
         </div>
       `;
     } else {
-      reviewsContainer.innerHTML = reviews
-        .map(
-          (r) => `
-        <div class="review-item">
-          "${escapeHTML(r.reviewText)}"
-        </div>
-      `
-        )
-        .join("");
+      if (countBadge) countBadge.textContent = `${reviews.length} written`;
+      if (reviews.length === 0) {
+        reviewsContainer.innerHTML = `
+          <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px;">
+            ${strings.profile.noReviewsYet}
+          </div>
+        `;
+      } else {
+        reviewsContainer.innerHTML = reviews
+          .map(
+            (r) => `
+          <div class="review-item">
+            "${escapeHTML(r.reviewText)}"
+          </div>
+        `
+          )
+          .join("");
+      }
     }
   }
 }
@@ -623,16 +661,19 @@ export function renderRankings() {
     return;
   }
 
+  const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
+
   const rows = ranked
     .map((item, index) => {
+      const isThresholdMet = item.ratingCount >= threshold;
       const rankFormatted = String(index + 1).padStart(2, "0");
-      const isTopRank = index < 3;
-      const scoreFormatted = formatScore(item.overallAverage);
+      const isTopRank = isThresholdMet && index < 3;
+      const scoreFormatted = formatScore(isThresholdMet ? item.overallAverage : null);
 
       return `
       <tr data-student-id="${item.student.id}" style="cursor: pointer;">
         <td class="rank-cell ${isTopRank ? "top-rank" : ""}">
-          ${rankFormatted}
+          ${isThresholdMet ? rankFormatted : `<span style="color:var(--text-tertiary); font-size:11px;">—</span>`}
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -650,7 +691,11 @@ export function renderRankings() {
           </div>
         </td>
         <td style="font-weight: 700; font-size: 14px; font-family: var(--font-mono);">
-          ${scoreFormatted.display} <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">/ 4</span>
+          ${
+            isThresholdMet
+              ? `${scoreFormatted.display} <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">/ 4</span>`
+              : `<span style="font-size: 11.5px; font-weight: normal; color: var(--text-tertiary); font-style: italic;">Hidden (< 3 ratings)</span>`
+          }
         </td>
         <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">
           ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}
