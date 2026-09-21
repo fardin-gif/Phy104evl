@@ -45,9 +45,11 @@ export const strings = {
     criteriaHeading: "Evaluation Dimensions",
     reviewsHeading: "Anonymous Observations",
     noReviewsYet: "No anonymous reviews yet.",
-    rateStudentBtn: "Rate This Classmate",
+    rateStudentBtn: "Rate this classmate",
     alreadyRatedBadge: "You have already rated this classmate",
     viewOnlyNotice: "Rating is reserved for verified 2024 batch students.",
+    thresholdPendingBadge: "Hidden (requires 3 submissions)",
+    thresholdNotice: "Scores and anonymous observations remain hidden until at least 3 classmates have submitted evaluations.",
   },
   ratingModal: {
     title: "Peer Evaluation",
