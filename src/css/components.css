@@ -471,6 +471,18 @@
   font-family: var(--font-mono);
 }
 
+.score-val-hidden {
+  color: var(--text-tertiary);
+  font-size: 15px;
+}
+
+.card-threshold-note {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
 .score-denom {
   font-size: 11px;
   color: var(--text-tertiary);
