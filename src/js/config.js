@@ -61,12 +61,12 @@ export function getFirebaseConfig() {
   }
 
   return {
-    apiKey: "AIzaSy_DEVELOPER_FIREBASE_API_KEY_PLACEHOLDER",
-    authDomain: "du-physics-104.firebaseapp.com",
-    projectId: "du-physics-104",
-    storageBucket: "du-physics-104.appspot.com",
-    messagingSenderId: "104000000000",
-    appId: "1:104000000000:web:104abcdef104"
+    apiKey: "AIzaSyDhp19CKe8WoSM0EFyImE40COVXQJeiUEU",
+  authDomain: "phy104-evalution.firebaseapp.com",
+  projectId: "phy104-evalution",
+  storageBucket: "phy104-evalution.firebasestorage.app",
+  messagingSenderId: "300222806514",
+  appId: "1:300222806514:web:7e3563b91226d479d9136b"
   };
 }
 
