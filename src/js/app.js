@@ -9,6 +9,7 @@ import {
 } from "./auth.js";
 import { loadStudents } from "./students.js";
 import { loadCriteria, loadAggregates, loadUserSubmittedRatings } from "./ratings.js";
+import { loadUserSubmittedReviews } from "./reviews.js";
 import { 
   renderHeader, 
   renderStats, 
@@ -64,7 +65,8 @@ async function bootstrap() {
         loadStudents(), 
         loadCriteria(), 
         loadAggregates(),
-        loadUserSubmittedRatings(user.uid)
+        loadUserSubmittedRatings(user.uid),
+        loadUserSubmittedReviews(user.uid)
       ]);
       renderStats();
       renderStudentGrid();
