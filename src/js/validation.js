@@ -29,6 +29,15 @@ export function extractRollFromEmail(email) {
 }
 
 /**
+ * Extract batch year from university email (e.g. s-2023xxxxxx -> '2023', s-2006xxxxxx -> '2006')
+ */
+export function extractBatchFromEmail(email) {
+  if (!email || typeof email !== "string") return null;
+  const match = email.trim().toLowerCase().match(/^s-(\d{4})\d{6}@phy\.du\.ac\.bd$/);
+  return match ? match[1] : null;
+}
+
+/**
  * Parse Google Drive sharing links to extract File ID and construct reliable image URLs
  */
 export function parseGoogleDriveUrl(url) {
