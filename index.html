@@ -94,13 +94,13 @@
 
             <div style="margin-top: var(--space-4); padding: 12px 14px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-sm); text-align: left; font-size: 12px; line-height: 1.55; color: var(--text-secondary);">
               <strong style="color: var(--text-primary); display: block; margin-bottom: 3px;">Batch Access Notice:</strong>
-              Only students of the <strong>DU Physics 104 batch</strong> have full access to view ratings and rate all their classmates. Members of other batches can only view the ratings and reviews.
+              Only students of the <strong>DU Physics 104 batch</strong> have full access to view ratings and rate all their classmates. Members of other batches can only view the ratings.
             </div>
           </div>
 
           <form id="auth-form">
             <div class="form-group">
-              <label class="form-label" for="auth-email-input">Department Email</label>
+              <label class="form-label" for="auth-email-input">Physics Department Email</label>
               <input 
                 type="email" 
                 id="auth-email-input" 
@@ -109,6 +109,7 @@
                 required 
                 autocomplete="email"
               />
+              <div class="form-help">Format: <span class="num">s-</span> + 10 digits + <span class="num">@phy.du.ac.bd</span></div>
             </div>
 
             <div id="auth-error-msg" style="display: none; padding: 10px 14px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: var(--space-4);"></div>
@@ -129,7 +130,7 @@
           <!-- Subtitle Heading -->
           <div class="overview-header-group">
             <h1 class="overview-title">
-              A scientifically questionable overview of how does the batch see itself
+              A scientifically questionable overview of how does the batch see itself?
             </h1>
           </div>
 
@@ -258,6 +259,48 @@
         <div class="modal-footer">
           <button type="button" id="btn-submit-rating" class="btn btn-primary" style="width: 100%;" disabled>
             Submit Anonymous Rating
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Only Submission Modal (For other batches and review-only submissions) -->
+    <div id="review-modal" class="modal-overlay">
+      <div class="modal-container" style="max-width: 480px;">
+        <div class="modal-header">
+          <div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-text); text-transform: uppercase;">
+              Peer Review Submission
+            </div>
+            <div class="modal-title">
+              Review <span id="review-modal-target-name"></span>
+            </div>
+            <div id="review-modal-target-roll" style="font-size: 11.5px; font-family: var(--font-mono); color: var(--text-secondary);"></div>
+          </div>
+          <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="padding: 10px 12px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.4;">
+            Students from your batch can submit constructive anonymous peer reviews. Your review will display your batch tag (e.g., <span id="review-modal-batch-tag" style="font-family: var(--font-mono); font-weight:600;">Batch</span>) without exposing your identity publicly.
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="form-label" for="review-only-text">Written Peer Review</label>
+              <span id="review-only-char-count" class="num" style="font-size: 11px; color: var(--text-tertiary);">0 / 500</span>
+            </div>
+            <textarea 
+              id="review-only-text" 
+              class="form-textarea" 
+              rows="4" 
+              maxlength="500" 
+              placeholder="Write your honest observation, constructive feedback, or words of appreciation (max 500 characters)..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-submit-review-only" class="btn btn-primary" style="width: 100%;" disabled>
+            Submit Anonymous Review
           </button>
         </div>
       </div>
