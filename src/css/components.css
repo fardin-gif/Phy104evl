@@ -758,13 +758,162 @@
 .review-item {
   padding: var(--space-3) var(--space-4);
   background: var(--bg-surface-subtle);
-  border-left: 2px solid var(--accent-primary);
+  border-left: 3px solid var(--accent-primary);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin-bottom: var(--space-3);
   font-size: 13px;
   color: var(--text-primary);
-  font-style: italic;
   line-height: 1.5;
+}
+
+.review-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.review-batch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  border: 1px solid var(--accent-border);
+}
+
+.review-item-text {
+  font-style: italic;
+  color: var(--text-primary);
+}
+
+/* Most Reviewed Person Proud Hero Focus Spotlight */
+.most-reviewed-spotlight {
+  position: relative;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 50%, rgba(245, 158, 11, 0.08) 100%);
+  border: 1.5px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+  box-shadow: 0 4px 20px -2px rgba(30, 58, 138, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.most-reviewed-spotlight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -4px rgba(30, 58, 138, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.06);
+}
+
+.most-reviewed-badge-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.3);
+}
+
+.most-reviewed-layout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.most-reviewed-avatar-wrap {
+  position: relative;
+}
+
+.most-reviewed-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 22px;
+  background: var(--bg-surface);
+  color: var(--accent-text);
+  overflow: hidden;
+}
+
+.most-reviewed-crown {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  background: #f59e0b;
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  border: 2px solid #ffffff;
+}
+
+.most-reviewed-details {
+  flex: 1;
+  min-width: 220px;
+}
+
+.most-reviewed-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.most-reviewed-roll {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.most-reviewed-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent-border);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.most-reviewed-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-left: auto;
 }
 
 /* --------------------------------------------------------------------------
