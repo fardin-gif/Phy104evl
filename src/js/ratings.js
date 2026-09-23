@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase.js";
 import { isFirebaseConfigured, APP_CONFIG } from "./config.js";
-import { isValidScore, isValidReview } from "./validation.js";
+import { isValidScore, isValidReview, extractBatchFromEmail } from "./validation.js";
 import { getState, setState } from "./state.js";
 
 // Default criteria configured for physics batch evaluation
@@ -173,6 +173,33 @@ export async function loadAggregates() {
         }
       }
 
+      // Load all reviews count per student to ensure aggregates have up-to-date individual review counts
+      try {
+        const reviewsSnap = await getDocs(collection(db, "reviews"));
+        const studentReviewCounts = {};
+        reviewsSnap.forEach((rDoc) => {
+          const rData = rDoc.data() || {};
+          if (rData.targetStudentId && rData.visible !== false) {
+            studentReviewCounts[rData.targetStudentId] = (studentReviewCounts[rData.targetStudentId] || 0) + 1;
+          }
+        });
+        for (const [sId, rCnt] of Object.entries(studentReviewCounts)) {
+          if (aggregates[sId]) {
+            aggregates[sId].reviewCount = rCnt;
+          } else {
+            aggregates[sId] = {
+              studentId: sId,
+              overallAverage: null,
+              ratingCount: 0,
+              reviewCount: rCnt,
+              criterionAverages: {},
+            };
+          }
+        }
+      } catch (revCountErr) {
+        console.warn("Could not load review counts for aggregates:", revCountErr);
+      }
+
       setState({ aggregates });
       return aggregates;
     } catch (err) {
@@ -288,9 +315,13 @@ export async function submitRating({ targetStudentId, scores, reviewText }) {
     // 2. Write review document if provided
     if (reviewText && reviewText.trim().length > 0) {
       const reviewRef = doc(collection(db, "reviews"));
+      const reviewerBatch = user.batch || (user.email ? extractBatchFromEmail(user.email) : "2024");
       await setDoc(reviewRef, {
         reviewId: reviewRef.id,
         ratingId: deterministicRatingId,
+        reviewerUid: user.uid,
+        reviewerEmail: user.email,
+        reviewerBatch: reviewerBatch,
         targetStudentId,
         reviewText: reviewText.trim(),
         visible: true,
