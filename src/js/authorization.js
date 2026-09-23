@@ -7,7 +7,7 @@
  * Category C: Verified 2024 batch student (s-2024XXXXXX@phy.du.ac.bd)
  * Administrator: Verified via custom token claim or admin backend verification
  */
-import { isValidDepartmentEmail, isBatch2024Student, extractRollFromEmail } from "./validation.js";
+import { isValidDepartmentEmail, isBatch2024Student, extractRollFromEmail, extractBatchFromEmail } from "./validation.js";
 
 export function resolveUserPermissions(user, customClaims = {}) {
   if (!user || !user.email) {
@@ -19,7 +19,9 @@ export function resolveUserPermissions(user, customClaims = {}) {
       isAdmin: false,
       canViewData: false,
       canSubmitRating: false,
+      canSubmitReview: false,
       roll: null,
+      batch: null,
     };
   }
 
@@ -28,6 +30,7 @@ export function resolveUserPermissions(user, customClaims = {}) {
   const is2024 = isDept && isBatch2024Student(email);
   const isAdmin = Boolean(customClaims.admin || user.isAdmin);
   const roll = extractRollFromEmail(email);
+  const batch = extractBatchFromEmail(email);
 
   return {
     category: is2024 ? "C" : (isDept ? "B" : "A"),
@@ -36,8 +39,10 @@ export function resolveUserPermissions(user, customClaims = {}) {
     isBatch2024: is2024,
     isAdmin: isAdmin,
     canViewData: isDept || isAdmin,
-    canSubmitRating: is2024,
+    canSubmitRating: is2024, // Only 2024 batch can submit numerical criteria ratings
+    canSubmitReview: isDept, // All department batches can write reviews
     roll: roll,
+    batch: batch,
     email: email,
     uid: user.uid,
   };
