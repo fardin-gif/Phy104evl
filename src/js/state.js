@@ -4,11 +4,12 @@
 import { APP_CONFIG } from "./config.js";
 
 const state = {
-  user: null, // { uid, email, isDepartment, isBatch2024, isAdmin, token }
+  user: null, // { uid, email, isDepartment, isBatch2024, isAdmin, token, batch, canSubmitRating, canSubmitReview }
   students: [],
   criteria: [],
   aggregates: {}, // { [studentId]: aggregateDoc }
   userSubmittedRatingIds: new Set(), // targetStudentIds already rated by current user
+  userSubmittedReviewIds: new Set(), // targetStudentIds already reviewed by current user
   activeStudentProfile: null,
   deviceSessions: [],
   searchQuery: "",
