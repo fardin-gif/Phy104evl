@@ -6,9 +6,9 @@ import { getFilteredStudents, getInitials } from "./students.js";
 import { formatScore } from "./utils.js";
 import { escapeHTML } from "./validation.js";
 import { strings } from "../translations/en.js";
-import { loadStudentReviews } from "./reviews.js";
+import { loadStudentReviews, submitReviewOnly, hasUserReviewedStudent } from "./reviews.js";
 import { hasUserRatedStudent, submitRating } from "./ratings.js";
-import { calculateRankings } from "./rankings.js";
+import { calculateRankings, getMostReviewedPerson } from "./rankings.js";
 import { fetchUserDeviceSessions, revokeDeviceSession } from "./deviceSessions.js";
 import { logoutUser } from "./auth.js";
 import { getFirebaseDb } from "./firebase.js";
@@ -336,7 +336,10 @@ export async function openStudentProfile(student) {
       </div>
     `;
 
-  // Rating action button section
+  // Rating / Review action button section
+  const { userSubmittedReviewIds } = getState();
+  const isAlreadyReviewed = userSubmittedReviewIds.has(student.id);
+
   let ratingActionHtml = "";
   if (user && user.canSubmitRating) {
     if (isAlreadyRated) {
@@ -353,7 +356,28 @@ export async function openStudentProfile(student) {
         </button>
       `;
     }
-  } else if (user && user.isDepartment) {
+  } else if (user && user.canSubmitReview) {
+    // Other batches (e.g. 2023, 2006, etc.) can write reviews but cannot rate
+    if (isAlreadyReviewed) {
+      ratingActionHtml = `
+        <div style="padding: 10px 14px; background: var(--status-success-bg); border: 1px solid var(--status-success-border); color: var(--status-success-text); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          You have submitted a peer review for this student
+        </div>
+      `;
+    } else {
+      ratingActionHtml = `
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-open-review-student" class="btn btn-primary btn-lg" style="width: 100%;">
+            Write Peer Review (Batch ${escapeHTML(user.batch || "Physics")})
+          </button>
+          <div style="font-size:11.5px; color:var(--text-tertiary); text-align:center;">
+            Numerical rating is reserved for Batch 2024. Your batch can submit constructive peer reviews.
+          </div>
+        </div>
+      `;
+    }
+  } else {
     ratingActionHtml = `
       <div style="padding: 8px 12px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-tertiary); text-align: center;">
         ${strings.profile.viewOnlyNotice}
@@ -411,10 +435,15 @@ export async function openStudentProfile(student) {
 
   openModal("profile-modal");
 
-  // Attach rating open button
+  // Attach rating or review open button
   document.getElementById("btn-open-rate-student")?.addEventListener("click", () => {
     closeModal("profile-modal");
     openRatingModal(student);
+  });
+
+  document.getElementById("btn-open-review-student")?.addEventListener("click", () => {
+    closeModal("profile-modal");
+    openReviewModal(student);
   });
 
   // Load reviews asynchronously
@@ -439,17 +468,98 @@ export async function openStudentProfile(student) {
         `;
       } else {
         reviewsContainer.innerHTML = reviews
-          .map(
-            (r) => `
+          .map((r) => {
+            const batchDisplay = r.reviewerBatch ? `Batch ${escapeHTML(r.reviewerBatch)}` : "Peer Review";
+            return `
           <div class="review-item">
-            "${escapeHTML(r.reviewText)}"
+            <div class="review-item-header">
+              <span class="review-batch-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                ${batchDisplay}
+              </span>
+            </div>
+            <div class="review-item-text">
+              "${escapeHTML(r.reviewText)}"
+            </div>
           </div>
-        `
-          )
+        `;
+          })
           .join("");
       }
     }
   }
+}
+
+/**
+ * Open Review-Only Modal (For other batches and general peer observations)
+ */
+export function openReviewModal(student) {
+  const { user } = getState();
+  const modal = document.getElementById("review-modal");
+  const targetName = document.getElementById("review-modal-target-name");
+  const targetRoll = document.getElementById("review-modal-target-roll");
+  const batchTag = document.getElementById("review-modal-batch-tag");
+  const reviewInput = document.getElementById("review-only-text");
+  const charCounter = document.getElementById("review-only-char-count");
+  const submitBtn = document.getElementById("btn-submit-review-only");
+
+  if (!modal) return;
+
+  if (targetName) targetName.textContent = student.name;
+  if (targetRoll) targetRoll.textContent = `Roll ${student.roll}`;
+  if (batchTag) batchTag.textContent = user?.batch ? `Batch ${user.batch}` : "Batch Student";
+  if (reviewInput) reviewInput.value = "";
+  if (charCounter) charCounter.textContent = "0 / 500";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submit Anonymous Review";
+  }
+
+  if (reviewInput && charCounter && submitBtn) {
+    const handleInput = () => {
+      const len = reviewInput.value.length;
+      charCounter.textContent = `${len} / 500`;
+      if (len > 500) {
+        charCounter.style.color = "var(--status-danger-text)";
+      } else {
+        charCounter.style.color = "var(--text-tertiary)";
+      }
+      submitBtn.disabled = reviewInput.value.trim().length === 0 || len > 500;
+    };
+    reviewInput.oninput = handleInput;
+  }
+
+  if (submitBtn) {
+    submitBtn.onclick = async () => {
+      const text = reviewInput ? reviewInput.value.trim() : "";
+      if (!text) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      try {
+        await submitReviewOnly({
+          targetStudentId: student.id,
+          reviewText: text,
+        });
+
+        closeModal("review-modal");
+        showToast("Anonymous peer review submitted successfully!", "success", 5000);
+
+        renderStats();
+        renderStudentGrid();
+
+        // Reopen student profile with fresh data
+        openStudentProfile(student);
+      } catch (err) {
+        showToast(err.message || strings.toasts.genericError, "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Anonymous Review";
+      }
+    };
+  }
+
+  openModal("review-modal");
 }
 
 /**
@@ -650,8 +760,9 @@ export function renderRankings() {
   if (!container) return;
 
   const ranked = calculateRankings();
+  const mostReviewed = getMostReviewedPerson();
 
-  if (ranked.length === 0) {
+  if (ranked.length === 0 && !mostReviewed) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-title">${strings.rankings.emptyRankings}</div>
@@ -662,6 +773,50 @@ export function renderRankings() {
   }
 
   const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
+
+  // Most Reviewed Person Spotlight HTML (Proud, high-focus showcase)
+  let mostReviewedHtml = "";
+  if (mostReviewed && mostReviewed.reviewCount > 0) {
+    const s = mostReviewed.student;
+    const revCount = mostReviewed.reviewCount;
+    mostReviewedHtml = `
+      <div class="most-reviewed-spotlight" id="most-reviewed-spotlight-card" data-student-id="${s.id}" tabindex="0" role="button" aria-label="View spotlight profile of ${escapeHTML(s.name)}">
+        <div class="most-reviewed-badge-ribbon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Batch Spotlight · Most Reviewed Person
+        </div>
+
+        <div class="most-reviewed-layout">
+          <div class="most-reviewed-avatar-wrap">
+            <div class="most-reviewed-avatar">
+              ${
+                s.imageUrl
+                  ? `<img src="${escapeHTML(s.imageUrl)}" alt="${escapeHTML(s.name)}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${getInitials(s.name)}'"/>`
+                  : getInitials(s.name)
+              }
+            </div>
+            <div class="most-reviewed-crown" title="Classmate Consensus">👑</div>
+          </div>
+
+          <div class="most-reviewed-details">
+            <div class="most-reviewed-name">${escapeHTML(s.name)}</div>
+            <div class="most-reviewed-roll">Physics Dept · Roll ${escapeHTML(s.roll)}</div>
+            <div>
+              <span class="most-reviewed-stat-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                ${revCount} ${revCount === 1 ? "Peer Review Received" : "Peer Reviews Received"}
+              </span>
+            </div>
+          </div>
+
+          <div class="most-reviewed-cta">
+            <span>Read Peer Observations</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   const rows = ranked
     .map((item, index) => {
@@ -698,7 +853,7 @@ export function renderRankings() {
           }
         </td>
         <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">
-          ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}
+          ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"} · ${item.reviewCount} ${item.reviewCount === 1 ? "review" : "reviews"}
         </td>
       </tr>
     `;
@@ -706,6 +861,8 @@ export function renderRankings() {
     .join("");
 
   container.innerHTML = `
+    ${mostReviewedHtml}
+
     <div class="rankings-table-wrapper">
       <table class="rankings-table">
         <thead>
@@ -713,7 +870,7 @@ export function renderRankings() {
             <th style="width: 64px;">INDEX</th>
             <th>STUDENT IDENTIFIER</th>
             <th style="width: 160px;">PERCEPTION MEAN</th>
-            <th style="width: 140px;">SAMPLE SIZE</th>
+            <th style="width: 170px;">SAMPLE SIZE</th>
           </tr>
         </thead>
         <tbody>
@@ -722,6 +879,19 @@ export function renderRankings() {
       </table>
     </div>
   `;
+
+  // Attach click listener to Most Reviewed Spotlight card
+  const spotlightCard = document.getElementById("most-reviewed-spotlight-card");
+  if (spotlightCard) {
+    spotlightCard.addEventListener("click", () => {
+      const studentId = spotlightCard.getAttribute("data-student-id");
+      const { students } = getState();
+      const student = students.find((s) => s.id === studentId);
+      if (student) {
+        openStudentProfile(student);
+      }
+    });
+  }
 
   // Attach row click listeners
   container.querySelectorAll("tbody tr").forEach((row) => {
