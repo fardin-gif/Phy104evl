@@ -64,3 +64,31 @@ export function calculateRankings() {
 
   return enriched;
 }
+
+/**
+ * Identify the student with the highest number of written reviews.
+ * Returns null if no students have any reviews.
+ */
+export function getMostReviewedPerson() {
+  const { students, aggregates } = getState();
+  const activeStudents = students.filter((s) => s.active);
+
+  let topPerson = null;
+  let maxReviews = 0;
+
+  for (const student of activeStudents) {
+    const agg = aggregates[student.id];
+    const reviewCount = agg?.reviewCount || 0;
+    if (reviewCount > maxReviews) {
+      maxReviews = reviewCount;
+      topPerson = {
+        student,
+        reviewCount,
+        overallAverage: agg?.overallAverage ?? null,
+        ratingCount: agg?.ratingCount ?? 0,
+      };
+    }
+  }
+
+  return topPerson;
+}
