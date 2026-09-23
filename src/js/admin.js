@@ -11,6 +11,7 @@ import {
   deleteDoc, 
   addDoc, 
   query, 
+  where,
   orderBy, 
   serverTimestamp 
 } from "firebase/firestore";
@@ -249,6 +250,12 @@ export async function loadAdminData() {
       const snap = await getDocs(collection(db, "reviews"));
       const reviews = [];
       snap.forEach((d) => reviews.push({ id: d.id, ...d.data() }));
+      // Sort newest first
+      reviews.sort((a, b) => {
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
       adminState.reviews = reviews;
     } catch (e) {
       adminState.reviews = [];
@@ -287,6 +294,9 @@ export function renderActiveTab() {
       break;
     case "exports":
       renderExportTab(contentArea);
+      break;
+    case "email":
+      renderEmailTab(contentArea);
       break;
     default:
       renderOverviewTab(contentArea);
@@ -646,8 +656,8 @@ function renderCriteriaTab(container) {
 function renderReviewsTab(container) {
   container.innerHTML = `
     <div style="margin-bottom:16px;">
-      <h3 style="font-size:16px; font-weight:700;">Review Moderation</h3>
-      <p style="font-size:12px; color:var(--text-secondary);">Inspect written reviews. Hide inappropriate content from public view without permanently destroying data.</p>
+      <h3 style="font-size:16px; font-weight:700;">Review Moderation & Audit</h3>
+      <p style="font-size:12px; color:var(--text-secondary);">Inspect written reviews, audit reviewer email and batch origin, toggle public visibility, or permanently delete inappropriate content.</p>
     </div>
 
     <div class="rankings-table-wrapper">
@@ -655,6 +665,8 @@ function renderReviewsTab(container) {
         <thead>
           <tr>
             <th>Target Student</th>
+            <th>Reviewer (Author Email)</th>
+            <th>Batch</th>
             <th>Review Content</th>
             <th>Visibility Status</th>
             <th style="text-align:right;">Actions</th>
@@ -663,23 +675,39 @@ function renderReviewsTab(container) {
         <tbody>
           ${
             adminState.reviews.length === 0
-              ? `<tr><td colspan="4" style="text-align:center; color:var(--text-tertiary); padding:24px;">No reviews recorded yet.</td></tr>`
+              ? `<tr><td colspan="6" style="text-align:center; color:var(--text-tertiary); padding:24px;">No reviews recorded yet.</td></tr>`
               : adminState.reviews
                   .map((r) => {
                     const student = adminState.students.find((s) => s.id === r.targetStudentId);
                     const studentName = student ? student.name : r.targetStudentId;
+                    const reviewerEmail = r.reviewerEmail || "Email protected (Legacy)";
+                    const reviewerBatch = r.reviewerBatch || (r.reviewerEmail ? r.reviewerEmail.replace(/.*s-(\d{4}).*/, "$1") : "—");
                     return `
               <tr>
-                <td style="font-weight:600;">${escapeHTML(studentName)}</td>
+                <td style="font-weight:600;">
+                  <div>${escapeHTML(studentName)}</div>
+                  <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-tertiary);">${student ? `Roll ${escapeHTML(student.roll)}` : ""}</div>
+                </td>
+                <td style="font-family:var(--font-mono); font-size:12px; color:var(--accent-text);">
+                  ${escapeHTML(reviewerEmail)}
+                </td>
+                <td>
+                  <span style="display:inline-block; padding:2px 8px; border-radius:var(--radius-sm); font-size:11px; font-weight:600; font-family:var(--font-mono); background:var(--accent-subtle); color:var(--accent-text); border:1px solid var(--accent-border);">
+                    ${escapeHTML(reviewerBatch)}
+                  </span>
+                </td>
                 <td style="max-width:320px; font-style:italic;">"${escapeHTML(r.reviewText)}"</td>
                 <td>
                   <span style="display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; background:${r.visible ? "var(--status-success-bg)" : "var(--status-danger-bg)"}; color:${r.visible ? "var(--status-success-text)" : "var(--status-danger-text)"};">
                     ${r.visible ? "Visible" : "Hidden"}
                   </span>
                 </td>
-                <td style="text-align:right;">
+                <td style="text-align:right; white-space:nowrap;">
                   <button class="btn btn-ghost btn-sm btn-toggle-review" data-id="${r.id}" style="color:${r.visible ? "var(--status-danger-text)" : "var(--status-success-text)"};">
-                    ${r.visible ? "Hide Review" : "Restore Review"}
+                    ${r.visible ? "Hide" : "Restore"}
+                  </button>
+                  <button class="btn btn-ghost btn-sm btn-delete-review" data-id="${r.id}" data-target="${r.targetStudentId}" style="color:var(--status-danger-text); margin-left:4px;">
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -692,6 +720,7 @@ function renderReviewsTab(container) {
     </div>
   `;
 
+  // Toggle Visibility Handler
   container.querySelectorAll(".btn-toggle-review").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
@@ -713,6 +742,46 @@ function renderReviewsTab(container) {
       renderReviewsTab(container);
     });
   });
+
+  // Permanently Delete Review Handler
+  container.querySelectorAll(".btn-delete-review").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const targetStudentId = btn.getAttribute("data-target");
+      const rev = adminState.reviews.find((r) => r.id === id);
+      if (!rev) return;
+
+      const confirmDelete = confirm(`Are you sure you want to permanently delete this review written to student? This cannot be undone.`);
+      if (!confirmDelete) return;
+
+      const db = getFirebaseDb();
+      if (isFirebaseConfigured() && db) {
+        try {
+          await deleteDoc(doc(db, "reviews", id));
+
+          // Recompute target student's review count
+          const remainingSnap = await getDocs(query(collection(db, "reviews"), where("targetStudentId", "==", targetStudentId)));
+          let count = 0;
+          remainingSnap.forEach((d) => {
+            if (d.id !== id && d.data().visible !== false) count++;
+          });
+
+          await setDoc(doc(db, "aggregates", targetStudentId), {
+            reviewCount: count,
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+        } catch (delErr) {
+          console.error("Could not delete review document:", delErr);
+          alert("Error deleting review: " + delErr.message);
+          return;
+        }
+      }
+
+      adminState.reviews = adminState.reviews.filter((r) => r.id !== id);
+      showAdminToast("Review permanently deleted.", "success");
+      renderReviewsTab(container);
+    });
+  });
 }
 
 /**
@@ -722,7 +791,7 @@ function renderExportTab(container) {
   container.innerHTML = `
     <div style="margin-bottom:20px;">
       <h3 style="font-size:16px; font-weight:700;">Protected Administrative Data Exports</h3>
-      <p style="font-size:12px; color:var(--text-secondary);">Download authorized datasets formatted with RFC 4180 escaping. Note: Reviewer identity remains protected in compliance with privacy guidelines.</p>
+      <p style="font-size:12px; color:var(--text-secondary);">Download authorized datasets formatted with RFC 4180 escaping. Includes reviewer batch and email audit logs for administrators.</p>
     </div>
 
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
@@ -734,7 +803,7 @@ function renderExportTab(container) {
 
       <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:16px;">
         <h4 style="font-size:14px; font-weight:600; margin-bottom:6px;">Reviews Dataset CSV</h4>
-        <p style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px;">Target Student, Review Text, Visibility, Date.</p>
+        <p style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px;">Target Student, Reviewer Email, Batch, Review Text, Visibility, Date.</p>
         <button id="btn-export-reviews" class="btn btn-secondary btn-sm" style="width:100%;">Download Reviews.csv</button>
       </div>
 
@@ -756,10 +825,18 @@ function renderExportTab(container) {
   });
 
   document.getElementById("btn-export-reviews")?.addEventListener("click", () => {
-    const rows = [["TargetStudentID", "TargetName", "ReviewText", "Visible", "Date"]];
+    const rows = [["TargetStudentID", "TargetName", "ReviewerEmail", "ReviewerBatch", "ReviewText", "Visible", "Date"]];
     adminState.reviews.forEach((r) => {
       const student = adminState.students.find((s) => s.id === r.targetStudentId);
-      rows.push([r.targetStudentId, student ? student.name : "", r.reviewText, r.visible ? "Yes" : "No", r.createdAt || ""]);
+      rows.push([
+        r.targetStudentId, 
+        student ? student.name : "", 
+        r.reviewerEmail || "", 
+        r.reviewerBatch || "", 
+        r.reviewText, 
+        r.visible ? "Yes" : "No", 
+        r.createdAt || ""
+      ]);
     });
     exportToCSV("DU_Physics_104_Reviews.csv", rows);
   });
@@ -771,6 +848,152 @@ function renderExportTab(container) {
     });
     exportToCSV("DU_Physics_104_Criteria.csv", rows);
   });
+}
+
+/**
+ * 6. Email Template & Firebase Console Guide (Option 1)
+ */
+function renderEmailTab(container) {
+  const defaultSubject = "Sign-in link for DU Physics 104 Peer Review";
+  const defaultSender = "DU Physics 104 Peer Review";
+  const defaultReplyTo = "physics@du.ac.bd";
+  const defaultBody = `Hello,
+
+Follow this link to sign in to the DU Physics 104 Peer Review System:
+
+%LINK%
+
+If you didn’t ask to sign in, you can safely ignore this email.
+
+Department of Physics · University of Dhaka
+Curzon Hall Campus`;
+
+  container.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Firebase Email Template (Option 1)</h3>
+        <p style="font-size: 13px; color: var(--text-secondary);">
+          Customize the passwordless sign-in email sent by Firebase directly from your Firebase Console. No SMTP server required.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a href="https://console.firebase.google.com/project/_/authentication/templates" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+          Open Firebase Console &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- 3-Step Setup Guide Banner -->
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 24px;">
+      <h4 style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">How to apply this template in Firebase:</h4>
+      <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.7;">
+        <li>Go to <strong>Firebase Console</strong> &rarr; <strong>Authentication</strong> &rarr; <strong>Templates</strong> tab.</li>
+        <li>Select <strong>Email link (passwordless sign-in)</strong> and click the <strong>Edit (pencil)</strong> button.</li>
+        <li>Copy and paste the customized fields below, then click <strong>Save</strong>.</li>
+      </ol>
+    </div>
+
+    <!-- Template Customization & Copy Fields Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 28px;">
+      
+      <!-- Field 1: Sender Name -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Sender Name</label>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-sender" style="padding: 3px 10px; font-size: 11px;">Copy</button>
+        </div>
+        <div id="text-sender" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); background: var(--bg-surface-subtle); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">${defaultSender}</div>
+      </div>
+
+      <!-- Field 2: Reply-To Email -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Reply-To Email</label>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-replyto" style="padding: 3px 10px; font-size: 11px;">Copy</button>
+        </div>
+        <div id="text-replyto" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); background: var(--bg-surface-subtle); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">${defaultReplyTo}</div>
+      </div>
+
+      <!-- Field 3: Subject Line -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; grid-column: 1 / -1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Subject Line</label>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-subject" style="padding: 3px 10px; font-size: 11px;">Copy</button>
+        </div>
+        <div id="text-subject" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); background: var(--bg-surface-subtle); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">${defaultSubject}</div>
+      </div>
+
+      <!-- Field 4: Message Body -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; grid-column: 1 / -1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Message Body (Includes %LINK% Placeholder)</label>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-body" style="padding: 3px 10px; font-size: 11px;">Copy Message Body</button>
+        </div>
+        <pre id="text-body" style="font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; color: var(--text-primary); background: var(--bg-surface-subtle); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); white-space: pre-wrap; margin: 0;">${defaultBody}</pre>
+        <div style="font-size: 11.5px; color: var(--text-tertiary); margin-top: 8px;">
+          Note: Keep the <code>%LINK%</code> placeholder intact. Firebase automatically replaces it with the authenticated single-use link when sending to students.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Student Inbox Outlook/Gmail Simulation Preview -->
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 24px;">
+      <h4 style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">
+        Inbox Simulation (How Students See It):
+      </h4>
+      
+      <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: #ffffff; color: #1e293b; max-width: 580px; margin: 0 auto; box-shadow: var(--shadow-sm); overflow: hidden;">
+        <!-- Email Header Bar -->
+        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 14px 18px;">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">From: <strong style="color: #0f172a;">${defaultSender}</strong> &lt;noreply@phy104-evalution.firebaseapp.com&gt;</div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">To: <strong style="color: #0f172a;">s-2024819001@phy.du.ac.bd</strong></div>
+          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-top: 6px;">Subject: ${defaultSubject}</div>
+        </div>
+
+        <!-- Email Body -->
+        <div style="padding: 24px 20px; font-size: 13.5px; line-height: 1.65; color: #334155;">
+          <p style="margin: 0 0 14px 0;">Hello,</p>
+          <p style="margin: 0 0 16px 0;">Follow this link to sign in to the DU Physics 104 Peer Review System:</p>
+          
+          <!-- Simulated Link -->
+          <div style="margin: 18px 0;">
+            <a href="javascript:void(0)" style="display: inline-block; background: #2563eb; color: #ffffff; font-weight: 600; text-decoration: none; padding: 10px 20px; border-radius: 4px; font-size: 13px;">
+              Sign In to DU Physics 104 &rarr;
+            </a>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: monospace;">
+              https://phy104-evalution.firebaseapp.com/__/auth/action?mode=signIn&...
+            </div>
+          </div>
+
+          <p style="margin: 18px 0 14px 0; color: #64748b; font-size: 12px;">If you didn’t ask to sign in, you can safely ignore this email.</p>
+
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 20px; font-size: 12px; color: #64748b;">
+            Department of Physics &middot; University of Dhaka<br>
+            Curzon Hall Campus
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // One-click copy listeners
+  const copyHelper = (btnId, textToCopy, label) => {
+    document.getElementById(btnId)?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        showAdminToast(`${label} copied to clipboard!`, "success", 3000);
+      } catch {
+        showAdminToast(`Could not copy ${label}`, "error", 3000);
+      }
+    });
+  };
+
+  copyHelper("btn-copy-sender", defaultSender, "Sender Name");
+  copyHelper("btn-copy-replyto", defaultReplyTo, "Reply-To");
+  copyHelper("btn-copy-subject", defaultSubject, "Subject Line");
+  copyHelper("btn-copy-body", defaultBody, "Message Body");
 }
 
 /**
