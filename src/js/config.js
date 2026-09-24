@@ -12,10 +12,10 @@ export const APP_CONFIG = {
   tagline: "How does the batch see itself?",
 
   // Strict University of Dhaka Physics email validation patterns
-  // Department student: s- followed by exactly 10 digits @phy.du.ac.bd
-  EMAIL_PATTERN_DEPARTMENT: /^s-\d{10}@phy\.du\.ac\.bd$/,
-  // 2024 Batch student: s-2024 followed by exactly 6 digits @phy.du.ac.bd
-  EMAIL_PATTERN_BATCH_2024: /^s-2024\d{6}@phy\.du\.ac\.bd$/,
+  // Department student: s- followed by exactly 10 digits @phy.du.ac.bd or @du.ac.bd
+  EMAIL_PATTERN_DEPARTMENT: /^s-\d{10}@(?:phy\.)?du\.ac\.bd$/,
+  // 2024 Batch student: s-2024 followed by exactly 6 digits @phy.du.ac.bd or @du.ac.bd
+  EMAIL_PATTERN_BATCH_2024: /^s-2024\d{6}@(?:phy\.)?du\.ac\.bd$/,
 
   // Score boundaries (default -1 to 4)
   DEFAULT_MIN_SCORE: -1,
