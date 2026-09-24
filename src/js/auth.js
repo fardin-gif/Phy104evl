@@ -5,6 +5,8 @@ import {
   sendSignInLinkToEmail, 
   isSignInWithEmailLink, 
   signInWithEmailLink, 
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut, 
   onAuthStateChanged 
 } from "firebase/auth";
@@ -14,6 +16,34 @@ import { isValidDepartmentEmail } from "./validation.js";
 import { resolveUserPermissions } from "./authorization.js";
 import { setState, getState } from "./state.js";
 import { syncDeviceSession } from "./deviceSessions.js";
+
+/**
+ * Sign in using University Google Account (Zero email quota limits, 1-click verification)
+ */
+export async function signInWithGoogle() {
+  const auth = getFirebaseAuth();
+  if (!isFirebaseConfigured() || !auth) {
+    throw new Error("Firebase Authentication is not configured. Please check src/js/config.js.");
+  }
+
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: "select_account"
+  });
+
+  const result = await signInWithPopup(auth, provider);
+  const user = result.user;
+
+  if (user && user.email) {
+    const normalizedEmail = user.email.trim().toLowerCase();
+    if (!isValidDepartmentEmail(normalizedEmail)) {
+      await signOut(auth);
+      throw new Error(`Access restricted: "${normalizedEmail}" is not a recognized Physics Department email. Please select your official s-xxxxxxxxxx@phy.du.ac.bd account.`);
+    }
+  }
+
+  return user;
+}
 
 /**
  * Send passwordless authentication email link via Firebase Auth (Option 1)
