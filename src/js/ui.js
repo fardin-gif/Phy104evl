@@ -362,17 +362,17 @@ export async function openStudentProfile(student) {
       ratingActionHtml = `
         <div style="padding: 10px 14px; background: var(--status-success-bg); border: 1px solid var(--status-success-border); color: var(--status-success-text); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          You have submitted a peer review for this student
+          You have submitted a review for this student
         </div>
       `;
     } else {
       ratingActionHtml = `
         <div style="display:flex; flex-direction:column; gap:8px;">
           <button id="btn-open-review-student" class="btn btn-primary btn-lg" style="width: 100%;">
-            Write Peer Review (Batch ${escapeHTML(user.batch || "Physics")})
+            Write Review (Batch ${escapeHTML(user.batch || "Physics")})
           </button>
           <div style="font-size:11.5px; color:var(--text-tertiary); text-align:center;">
-            Numerical rating is reserved for Batch 2024. Your batch can submit constructive peer reviews.
+            Numerical rating is reserved for Batch 2024. Your batch can submit constructive reviews.
           </div>
         </div>
       `;
@@ -804,13 +804,13 @@ export function renderRankings() {
             <div>
               <span class="most-reviewed-stat-pill">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                ${revCount} ${revCount === 1 ? "Peer Review Received" : "Peer Reviews Received"}
+                ${revCount} ${revCount === 1 ? "Review Received" : "Reviews Received"}
               </span>
             </div>
           </div>
 
           <div class="most-reviewed-cta">
-            <span>Read Peer Observations</span>
+            <span>Read All Observations</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </div>
         </div>
