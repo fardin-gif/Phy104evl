@@ -48,8 +48,8 @@ export const strings = {
     rateStudentBtn: "Rate this classmate",
     alreadyRatedBadge: "You have already rated this classmate",
     viewOnlyNotice: "Rating is reserved for verified 2024 batch students.",
-    thresholdPendingBadge: "Hidden (requires 3 submissions)",
-    thresholdNotice: "Scores and anonymous observations remain hidden until at least 3 classmates have submitted evaluations.",
+    thresholdPendingBadge: "Unrated",
+    thresholdNotice: "No peer evaluations or observations have been recorded for this student yet.",
   },
   ratingModal: {
     title: "Peer Evaluation",
