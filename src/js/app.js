@@ -5,7 +5,8 @@ import { initFirebase } from "./firebase.js";
 import { 
   initAuthListener, 
   sendEmailLinkAuth, 
-  handleEmailLinkCallback 
+  handleEmailLinkCallback,
+  signInWithGoogle
 } from "./auth.js";
 import { loadStudents } from "./students.js";
 import { loadCriteria, loadAggregates, loadUserSubmittedRatings } from "./ratings.js";
@@ -92,11 +93,44 @@ async function bootstrap() {
 }
 
 function setupEventListeners() {
-  // Auth Form
+  // Google Sign-In (1-Click, No Email Quota Limits)
+  const googleSignInBtn = document.getElementById("btn-google-sign-in");
+  const authErrorEl = document.getElementById("auth-error-msg");
+
+  if (googleSignInBtn) {
+    googleSignInBtn.addEventListener("click", async () => {
+      if (authErrorEl) authErrorEl.style.display = "none";
+      googleSignInBtn.disabled = true;
+      const originalHtml = googleSignInBtn.innerHTML;
+      googleSignInBtn.innerHTML = `
+        <span style="display:inline-block; animation:spin 1s linear infinite;">⏳</span>
+        <span>Signing in with Google...</span>
+      `;
+
+      try {
+        await signInWithGoogle();
+        showToast("Signed in successfully with your Google account!", "success");
+      } catch (err) {
+        if (authErrorEl) {
+          // Check for popup closed by user
+          if (err.code === "auth/popup-closed-by-user") {
+            authErrorEl.textContent = "Sign-in cancelled. Please complete the Google sign-in popup.";
+          } else {
+            authErrorEl.textContent = err.message || "Could not sign in with Google. Please try again.";
+          }
+          authErrorEl.style.display = "block";
+        }
+      } finally {
+        googleSignInBtn.disabled = false;
+        googleSignInBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  // Auth Form (Passwordless Email Link)
   const authForm = document.getElementById("auth-form");
   const emailInput = document.getElementById("auth-email-input");
   const authSubmitBtn = document.getElementById("auth-submit-btn");
-  const authErrorEl = document.getElementById("auth-error-msg");
 
   if (authForm && emailInput) {
     authForm.addEventListener("submit", async (e) => {
