@@ -24,7 +24,7 @@ export function isBatch2024Student(email) {
  */
 export function extractRollFromEmail(email) {
   if (!email || typeof email !== "string") return null;
-  const match = email.trim().toLowerCase().match(/^s-(\d{10})@phy\.du\.ac\.bd$/);
+  const match = email.trim().toLowerCase().match(/^s-(\d{10})@(?:phy\.)?du\.ac\.bd$/);
   return match ? match[1] : null;
 }
 
@@ -33,7 +33,7 @@ export function extractRollFromEmail(email) {
  */
 export function extractBatchFromEmail(email) {
   if (!email || typeof email !== "string") return null;
-  const match = email.trim().toLowerCase().match(/^s-(\d{4})\d{6}@phy\.du\.ac\.bd$/);
+  const match = email.trim().toLowerCase().match(/^s-(\d{4})\d{6}@(?:phy\.)?du\.ac\.bd$/);
   return match ? match[1] : null;
 }
 
