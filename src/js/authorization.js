@@ -32,13 +32,15 @@ export function resolveUserPermissions(user, customClaims = {}) {
   const roll = extractRollFromEmail(email);
   const batch = extractBatchFromEmail(email);
 
+  const isAuth = isDept || isAdmin;
+
   return {
     category: is2024 ? "C" : (isDept ? "B" : "A"),
-    isAuthenticated: true,
+    isAuthenticated: isAuth,
     isDepartment: isDept,
     isBatch2024: is2024,
     isAdmin: isAdmin,
-    canViewData: isDept || isAdmin,
+    canViewData: isAuth,
     canSubmitRating: is2024, // Only 2024 batch can submit numerical criteria ratings
     canSubmitReview: isDept, // All department batches can write reviews
     roll: roll,
