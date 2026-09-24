@@ -230,7 +230,7 @@ export function renderStudentGrid() {
         </div>
         ${
           !isThresholdMet
-            ? `<div class="card-threshold-note">${count === 0 ? "No ratings yet" : `${count}/3 ratings — results hidden until 3 submissions`}</div>`
+            ? `<div class="card-threshold-note">No ratings yet</div>`
             : ""
         }
 
@@ -362,17 +362,17 @@ export async function openStudentProfile(student) {
       ratingActionHtml = `
         <div style="padding: 10px 14px; background: var(--status-success-bg); border: 1px solid var(--status-success-border); color: var(--status-success-text); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          You have submitted a review for this student
+          You have submitted a peer review for this student
         </div>
       `;
     } else {
       ratingActionHtml = `
         <div style="display:flex; flex-direction:column; gap:8px;">
           <button id="btn-open-review-student" class="btn btn-primary btn-lg" style="width: 100%;">
-            Write Review (Batch ${escapeHTML(user.batch || "Physics")})
+            Write Peer Review (Batch ${escapeHTML(user.batch || "Physics")})
           </button>
           <div style="font-size:11.5px; color:var(--text-tertiary); text-align:center;">
-            Numerical rating is reserved for Batch 2024. Your batch can submit constructive reviews.
+            Numerical rating is reserved for Batch 2024. Your batch can submit constructive peer reviews.
           </div>
         </div>
       `;
@@ -402,9 +402,9 @@ export async function openStudentProfile(student) {
             isThresholdMet
               ? `<span style="font-size:15px; font-weight:700; font-family:var(--font-mono);">${scoreFormatted.display}</span>
                  <span style="font-size:11.5px; color:var(--text-tertiary); font-family:var(--font-mono);">/ 4.00</span>`
-              : `<span style="font-size:13px; font-weight:600; color:var(--text-tertiary); font-family:var(--font-mono);">Score Hidden</span>`
+              : `<span style="font-size:13px; font-weight:600; color:var(--text-tertiary); font-family:var(--font-mono);">Unrated</span>`
           }
-          <span style="font-size:11.5px; color:var(--text-tertiary); margin-left: 4px;">(${count} ${count === 1 ? "rating" : "ratings"}${!isThresholdMet ? " · min 3 required" : ""})</span>
+          <span style="font-size:11.5px; color:var(--text-tertiary); margin-left: 4px;">(${count} ${count === 1 ? "rating" : "ratings"})</span>
         </div>
       </div>
     </div>
@@ -451,41 +451,33 @@ export async function openStudentProfile(student) {
   const reviewsContainer = document.getElementById("student-reviews-container");
   const countBadge = document.getElementById("review-count-badge");
   if (reviewsContainer) {
-    if (!isThresholdMet) {
-      if (countBadge) countBadge.textContent = "Locked";
+    if (reviews.length === 0) {
+      if (countBadge) countBadge.textContent = "0 written";
       reviewsContainer.innerHTML = `
-        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px; line-height: 1.5;">
-          ${strings.profile.thresholdNotice}
+        <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px;">
+          ${strings.profile.noReviewsYet}
         </div>
       `;
     } else {
       if (countBadge) countBadge.textContent = `${reviews.length} written`;
-      if (reviews.length === 0) {
-        reviewsContainer.innerHTML = `
-          <div style="padding: var(--space-4); text-align: center; color: var(--text-tertiary); font-size: 12.5px;">
-            ${strings.profile.noReviewsYet}
+      reviewsContainer.innerHTML = reviews
+        .map((r) => {
+          const batchDisplay = r.reviewerBatch ? `Batch ${escapeHTML(r.reviewerBatch)}` : "Peer Review";
+          return `
+        <div class="review-item">
+          <div class="review-item-header">
+            <span class="review-batch-badge">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              ${batchDisplay}
+            </span>
           </div>
-        `;
-      } else {
-        reviewsContainer.innerHTML = reviews
-          .map((r) => {
-            const batchDisplay = r.reviewerBatch ? `Batch ${escapeHTML(r.reviewerBatch)}` : "Peer Review";
-            return `
-          <div class="review-item">
-            <div class="review-item-header">
-              <span class="review-batch-badge">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                ${batchDisplay}
-              </span>
-            </div>
-            <div class="review-item-text">
-              "${escapeHTML(r.reviewText)}"
-            </div>
+          <div class="review-item-text">
+            "${escapeHTML(r.reviewText)}"
           </div>
-        `;
-          })
-          .join("");
-      }
+        </div>
+      `;
+        })
+        .join("");
     }
   }
 }
@@ -804,13 +796,13 @@ export function renderRankings() {
             <div>
               <span class="most-reviewed-stat-pill">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                ${revCount} ${revCount === 1 ? "Review Received" : "Reviews Received"}
+                ${revCount} ${revCount === 1 ? "Peer Review Received" : "Peer Reviews Received"}
               </span>
             </div>
           </div>
 
           <div class="most-reviewed-cta">
-            <span>Read All Observations</span>
+            <span>Read Peer Observations</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </div>
         </div>
@@ -818,17 +810,27 @@ export function renderRankings() {
     `;
   }
 
+  let currentRank = 0;
   const rows = ranked
-    .map((item, index) => {
-      const isThresholdMet = item.ratingCount >= threshold;
-      const rankFormatted = String(index + 1).padStart(2, "0");
-      const isTopRank = isThresholdMet && index < 3;
-      const scoreFormatted = formatScore(isThresholdMet ? item.overallAverage : null);
+    .map((item) => {
+      const hasRating = item.hasRating;
+      let rankFormatted = `<span style="color:var(--text-tertiary); font-size:11px;">—</span>`;
+      let isTopRank = false;
+
+      if (hasRating) {
+        currentRank += 1;
+        rankFormatted = String(currentRank).padStart(2, "0");
+        if (currentRank <= 3) {
+          isTopRank = true;
+        }
+      }
+
+      const scoreFormatted = formatScore(hasRating ? item.overallAverage : null);
 
       return `
       <tr data-student-id="${item.student.id}" style="cursor: pointer;">
         <td class="rank-cell ${isTopRank ? "top-rank" : ""}">
-          ${isThresholdMet ? rankFormatted : `<span style="color:var(--text-tertiary); font-size:11px;">—</span>`}
+          ${rankFormatted}
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -847,13 +849,13 @@ export function renderRankings() {
         </td>
         <td style="font-weight: 700; font-size: 14px; font-family: var(--font-mono);">
           ${
-            isThresholdMet
+            hasRating
               ? `${scoreFormatted.display} <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">/ 4</span>`
-              : `<span style="font-size: 11.5px; font-weight: normal; color: var(--text-tertiary); font-style: italic;">Hidden (< 3 ratings)</span>`
+              : `<span style="font-size: 11.5px; font-weight: normal; color: var(--text-tertiary); font-style: italic;">Unrated</span>`
           }
         </td>
         <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">
-          ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"} · ${item.reviewCount} ${item.reviewCount === 1 ? "review" : "reviews"}
+          ${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}
         </td>
       </tr>
     `;
@@ -867,10 +869,10 @@ export function renderRankings() {
       <table class="rankings-table">
         <thead>
           <tr>
-            <th style="width: 64px;">INDEX</th>
+            <th style="width: 64px;">RANK</th>
             <th>STUDENT IDENTIFIER</th>
             <th style="width: 160px;">PERCEPTION MEAN</th>
-            <th style="width: 170px;">SAMPLE SIZE</th>
+            <th style="width: 170px;">RATINGS COUNT</th>
           </tr>
         </thead>
         <tbody>
