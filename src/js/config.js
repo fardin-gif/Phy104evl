@@ -24,7 +24,7 @@ export const APP_CONFIG = {
   // Constraints
   MAX_REVIEW_LENGTH: 500,
   MAX_ACTIVE_DEVICES: 3,
-  MIN_RATINGS_THRESHOLD: 3,
+  MIN_RATINGS_THRESHOLD: 1,
 
   // Storage keys
   STORAGE_KEY_EMAIL_FOR_SIGN_IN: "du_phy_104_emailForSignIn",
