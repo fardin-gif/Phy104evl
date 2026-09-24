@@ -5,12 +5,12 @@ import { getState } from "./state.js";
 import { APP_CONFIG } from "./config.js";
 
 /**
- * Compute sorted rankings for active students based on arithmetic overall average.
- * Note: Only students with at least MIN_RATINGS_THRESHOLD (3) ratings are ranked with visible scores.
+ * Compute sorted rankings for active students based on rating scores.
+ * Highest rated person is top priority.
+ * Reviews are NOT counted for this ranking, strictly ratings.
  */
 export function calculateRankings() {
   const { students, aggregates } = getState();
-  const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
 
   const activeStudents = students.filter((s) => s.active);
 
@@ -22,30 +22,29 @@ export function calculateRankings() {
     };
 
     const count = agg.ratingCount || 0;
-    const hasMetThreshold = count >= threshold;
+    const hasRating = count > 0 && agg.overallAverage !== null && agg.overallAverage !== undefined && !isNaN(agg.overallAverage);
 
     return {
       student,
-      overallAverage: agg.overallAverage,
+      overallAverage: hasRating ? Number(agg.overallAverage) : null,
       ratingCount: count,
       reviewCount: agg.reviewCount || 0,
-      hasMetThreshold,
+      hasRating,
     };
   });
 
-  // Stable sorting strategy:
-  // 1. Students who have met the threshold and have scores first
-  // 2. Highest overallAverage desc
-  // 3. Higher ratingCount desc (more consensus)
-  // 4. Then students below threshold, sorted by ratingCount desc then roll
+  // Ranking sorting strategy:
+  // 1. Students with ratings come before unrated students.
+  // 2. Highest rated person is top priority (overallAverage DESC).
+  //    (Reviews do NOT count for this ranking, purely ratings).
+  // 3. Higher ratingCount DESC (tiebreaker for same rating score).
+  // 4. Student roll ASC (tiebreaker).
+  // 5. Unrated students placed at bottom, sorted by roll ASC.
   enriched.sort((a, b) => {
-    const aEligible = a.hasMetThreshold && a.overallAverage !== null;
-    const bEligible = b.hasMetThreshold && b.overallAverage !== null;
+    if (a.hasRating && !b.hasRating) return -1;
+    if (!a.hasRating && b.hasRating) return 1;
 
-    if (aEligible && !bEligible) return -1;
-    if (!aEligible && bEligible) return 1;
-
-    if (aEligible && bEligible) {
+    if (a.hasRating && b.hasRating) {
       if (b.overallAverage !== a.overallAverage) {
         return b.overallAverage - a.overallAverage;
       }
@@ -55,10 +54,7 @@ export function calculateRankings() {
       return (a.student.roll || "").localeCompare(b.student.roll || "");
     }
 
-    // Both below threshold
-    if (b.ratingCount !== a.ratingCount) {
-      return b.ratingCount - a.ratingCount;
-    }
+    // Both unrated: sort by roll
     return (a.student.roll || "").localeCompare(b.student.roll || "");
   });
 
