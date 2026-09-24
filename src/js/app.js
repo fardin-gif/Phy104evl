@@ -124,7 +124,11 @@ function setupEventListeners() {
         if (feedback) feedback.style.display = "block";
       } catch (err) {
         if (authErrorEl) {
-          authErrorEl.textContent = err.message || strings.toasts.genericError;
+          let msg = err.message || strings.toasts.genericError;
+          if (err.code === "auth/quota-exceeded" || (err.message && err.message.includes("quota-exceeded"))) {
+            msg = "Firebase: Exceeded Email quota. Please try again few moments later.";
+          }
+          authErrorEl.textContent = msg;
           authErrorEl.style.display = "block";
         }
       } finally {
