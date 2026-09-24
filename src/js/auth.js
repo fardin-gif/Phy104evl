@@ -27,7 +27,9 @@ export async function signInWithGoogle() {
   }
 
   const provider = new GoogleAuthProvider();
+  // Restrict Google Account Chooser specifically to physics university domain
   provider.setCustomParameters({
+    hd: "phy.du.ac.bd",
     prompt: "select_account"
   });
 
@@ -37,8 +39,14 @@ export async function signInWithGoogle() {
   if (user && user.email) {
     const normalizedEmail = user.email.trim().toLowerCase();
     if (!isValidDepartmentEmail(normalizedEmail)) {
+      // Instantly delete the unauthorized personal user from Firebase Auth so it doesn't linger in Firebase Console
+      try {
+        await user.delete();
+      } catch (delErr) {
+        console.warn("Could not delete unauthorized user:", delErr);
+      }
       await signOut(auth);
-      throw new Error(`Access restricted: "${normalizedEmail}" is not a recognized Physics Department email. Please select your official s-xxxxxxxxxx@phy.du.ac.bd account.`);
+      throw new Error(`Access restricted: "${normalizedEmail}" is a personal or unauthorized account. Only official Physics Department student emails (s-xxxxxxxxxx@phy.du.ac.bd) are allowed.`);
     }
   }
 
@@ -130,8 +138,15 @@ export function initAuthListener(onUserChanged) {
   if (auth && isFirebaseConfigured()) {
     return onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && firebaseUser.email) {
-        // Enforce valid domain
-        if (!isValidDepartmentEmail(firebaseUser.email) && !firebaseUser.email.endsWith("@du.ac.bd")) {
+        const email = (firebaseUser.email || "").trim().toLowerCase();
+        // Enforce valid physics department email strictly
+        if (!isValidDepartmentEmail(email)) {
+          console.warn("Unauthorized non-department account detected in auth listener:", email);
+          try {
+            await firebaseUser.delete();
+          } catch (e) {
+            // Silently handle if already deleted
+          }
           await signOut(auth);
           setState({ user: null, isLoading: false });
           if (onUserChanged) onUserChanged(null);
