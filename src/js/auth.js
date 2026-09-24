@@ -16,7 +16,7 @@ import { setState, getState } from "./state.js";
 import { syncDeviceSession } from "./deviceSessions.js";
 
 /**
- * Send passwordless authentication email link
+ * Send passwordless authentication email link via Firebase Auth (Option 1)
  */
 export async function sendEmailLinkAuth(email) {
   const normalizedEmail = email.trim().toLowerCase();
@@ -25,9 +25,8 @@ export async function sendEmailLinkAuth(email) {
     throw new Error("Only official Physics Department emails are permitted (s-xxxxxxxxxx@phy.du.ac.bd).");
   }
 
+  // Standard Firebase Client-side Email Link Authentication (Option 1)
   const auth = getFirebaseAuth();
-
-  // Execute real Firebase Email Link Authentication
   if (!isFirebaseConfigured() || !auth) {
     throw new Error("Firebase Authentication is not configured. Please supply your Firebase project configuration in src/js/config.js to dispatch live sign-in links.");
   }
@@ -37,9 +36,16 @@ export async function sendEmailLinkAuth(email) {
     handleCodeInApp: true,
   };
 
-  await sendSignInLinkToEmail(auth, normalizedEmail, actionCodeSettings);
-  localStorage.setItem(APP_CONFIG.STORAGE_KEY_EMAIL_FOR_SIGN_IN, normalizedEmail);
-  return { success: true, email: normalizedEmail };
+  try {
+    await sendSignInLinkToEmail(auth, normalizedEmail, actionCodeSettings);
+    localStorage.setItem(APP_CONFIG.STORAGE_KEY_EMAIL_FOR_SIGN_IN, normalizedEmail);
+    return { success: true, email: normalizedEmail };
+  } catch (err) {
+    if (err.code === "auth/quota-exceeded" || (err.message && err.message.includes("quota-exceeded"))) {
+      throw new Error("Firebase: Exceeded Email quota. Please try again few moments later.");
+    }
+    throw err;
+  }
 }
 
 /**
