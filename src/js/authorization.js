@@ -26,23 +26,22 @@ export function resolveUserPermissions(user, customClaims = {}) {
   }
 
   const email = user.email.trim().toLowerCase();
-  const isDept = isValidDepartmentEmail(email);
-  const is2024 = isDept && isBatch2024Student(email);
+  const is2024 = isBatch2024Student(email);
   const isAdmin = Boolean(customClaims.admin || user.isAdmin);
   const roll = extractRollFromEmail(email);
   const batch = extractBatchFromEmail(email);
 
-  const isAuth = isDept || isAdmin;
+  const isAuth = is2024 || isAdmin;
 
   return {
-    category: is2024 ? "C" : (isDept ? "B" : "A"),
+    category: is2024 ? "C" : "A",
     isAuthenticated: isAuth,
-    isDepartment: isDept,
+    isDepartment: is2024,
     isBatch2024: is2024,
     isAdmin: isAdmin,
     canViewData: isAuth,
-    canSubmitRating: is2024, // Only 2024 batch can submit numerical criteria ratings
-    canSubmitReview: isDept, // All department batches can write reviews
+    canSubmitRating: is2024, // Only 2024 batch can submit ratings
+    canSubmitReview: is2024, // Only 2024 batch can submit reviews
     roll: roll,
     batch: batch,
     email: email,
