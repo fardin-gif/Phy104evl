@@ -1,292 +1,350 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DO NOT PRESS THIS BUTTON</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#EDEAE1; --bg2:#e2ded2; --ink:#141414; --panel:#ffffff;
-    --yellow:#FFC700; --red:#E11D2A; --blue:#2451FF; --mono-dim:#7a7566;
-    box-sizing:border-box;
-    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#111111; --bg2:#0a0a0a; --ink:#f2efe6; --panel:#1a1a1a; --mono-dim:#8a8478;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#111111; --bg2:#0a0a0a; --ink:#f2efe6; --panel:#1a1a1a; --mono-dim:#8a8478;
-  }
-  html{scroll-padding-top:env(safe-area-inset-top,0px);}
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:'Oswald',sans-serif;
-    display:flex; flex-direction:column; align-items:center;
-    overflow-x:hidden; position:relative;
-  }
-  .stripe{
-    width:100%; height:16px; flex-shrink:0;
-    background:repeating-linear-gradient(45deg, var(--yellow) 0 18px, var(--ink) 18px 36px);
-  }
-  main{
-    width:100%; max-width:560px; padding:2.2rem 1.4rem 3rem;
-    display:flex; flex-direction:column; align-items:center; text-align:center; flex:1;
-  }
-  h1{
-    font-size:clamp(2rem,8vw,2.9rem); line-height:1.02; font-weight:700;
-    letter-spacing:0.01em; margin:0.4rem 0 0.6rem; text-transform:uppercase;
-  }
-  h1 span{color:var(--red);}
-  .sub{
-    font-family:'JetBrains Mono',monospace; color:var(--mono-dim);
-    font-size:0.85rem; max-width:34ch; margin:0 0 2rem;
-  }
-  .odometer{
-    background:var(--ink); color:var(--yellow); border-radius:6px;
-    padding:0.7rem 1.4rem; display:inline-flex; flex-direction:column; gap:0.15rem;
-    margin-bottom:2.2rem; box-shadow:inset 0 0 0 3px #000a;
-  }
-  :root[data-theme="dark"] .odometer, @media (prefers-color-scheme:dark){.odometer{box-shadow:inset 0 0 0 3px #ffffff14;}}
-  .odo-label{font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.15em; opacity:0.75;}
-  .odo-num{font-family:'JetBrains Mono',monospace; font-size:2rem; font-weight:700; letter-spacing:0.08em;}
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2nd Order Gossip</title>
+    <meta name="description" content="Private peer review and academic evaluation system for the Department of Physics, University of Dhaka (Batch 104)." />
+    <meta property="og:title" content="2nd Order Gossip" />
+    <meta property="og:description" content="Private peer review and academic evaluation system for the Department of Physics, University of Dhaka (Batch 104)." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1e3a8a" />
 
-  .big-button{
-    width:min(46vw,190px); height:min(46vw,190px); border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #ff5a4d, var(--red) 60%, #9c0f18 100%);
-    border:none; color:#fff; font-family:'Oswald',sans-serif; font-weight:700;
-    font-size:1.3rem; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer;
-    box-shadow:0 10px 0 #7d0b12, 0 14px 22px rgba(0,0,0,0.35);
-    transition:transform 0.06s ease, box-shadow 0.06s ease;
-  }
-  .big-button:active{ transform:translateY(8px); box-shadow:0 2px 0 #7d0b12, 0 6px 12px rgba(0,0,0,0.3); }
-  .big-button:focus-visible{ outline:3px solid var(--blue); outline-offset:5px; }
+    <!-- Import Map for direct browser ES Module execution (e.g. VS Code Live Server, static servers) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js"
+        }
+      }
+    </script>
 
-  .cancel-slot{ height:70px; display:flex; align-items:center; justify-content:center; margin-top:1.8rem; width:100%; }
-  .cancel-button{
-    font-family:'JetBrains Mono',monospace; font-size:0.8rem; padding:0.65rem 1.1rem;
-    background:var(--panel); color:var(--ink); border:1.5px solid var(--ink);
-    border-radius:4px; cursor:pointer; transition:transform 0.12s ease;
-    z-index:20;
-  }
-  .cancel-button:focus-visible{ outline:3px solid var(--blue); outline-offset:3px; }
+    <!-- Design System Stylesheets -->
+    <link rel="stylesheet" href="/src/css/reset.css" />
+    <link rel="stylesheet" href="/src/css/variables.css" />
+    <link rel="stylesheet" href="/src/css/base.css" />
+    <link rel="stylesheet" href="/src/css/layout.css" />
+    <link rel="stylesheet" href="/src/css/components.css" />
+    <link rel="stylesheet" href="/src/css/themes.css" />
+    <link rel="stylesheet" href="/src/css/responsive.css" />
+  </head>
+  <body>
+    <!-- Main Application Header (100% Full Viewport Width) -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-section">
+          <img 
+            id="du-logo-img"
+            class="brand-logo-img" 
+            src="https://png.pngtree.com/png-clipart/20250430/original/pngtree-dhaka-university-logo-vector-png-image_20909053.png" 
+            alt="Dhaka University Logo" 
+            width="36" 
+            height="36" 
+            loading="eager"
+            decoding="async"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+          />
+          <div class="brand-badge" style="display: none;" title="Batch 104">104</div>
+          <div class="brand-title">
+            <span class="brand-main">PHYSICS · UNIVERSITY OF DHAKA</span>
+            <span class="brand-sub">2<sup>nd</sup> Order Gossip</span>
+          </div>
+        </div>
 
-  .terminal{
-    margin-top:2rem; width:100%; background:var(--ink); color:#9CFF9C;
-    border-radius:6px; padding:0.8rem 0.9rem; font-family:'JetBrains Mono',monospace;
-    font-size:0.72rem; text-align:left; height:150px; overflow-y:auto;
-    box-shadow:inset 0 0 0 1px #ffffff12;
-  }
-  .terminal-line{ opacity:0; animation:appear 0.25s ease forwards; margin-bottom:0.35rem; }
-  .terminal-line.dim{ color:var(--mono-dim); }
-  @keyframes appear{ to{opacity:1;} }
+        <nav class="header-nav" id="main-nav">
+          <a href="#/students" class="nav-link active">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="nav-text">Students</span>
+          </a>
+          <a href="#/rankings" class="nav-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span class="nav-text">Rankings</span>
+          </a>
+        </nav>
 
-  #confetti-root{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50; }
-  .confetto{ position:absolute; top:-20px; opacity:0.95; animation:fall linear forwards; }
-  @keyframes fall{ to{ transform:translateY(110vh) rotate(600deg); opacity:0.4; } }
+        <div class="header-actions" id="header-auth-section">
+          <!-- Populated dynamically via ui.js -->
+        </div>
+      </div>
+    </header>
 
-  #siren{
-    position:fixed; inset:0; background:var(--red); opacity:0; pointer-events:none;
-    mix-blend-mode:multiply; z-index:40; transition:opacity 0.08s ease;
-  }
-  #siren.on{ opacity:0.35; }
+    <div class="app-container">
+      <!-- Main Content Container -->
+      <main class="app-main">
+        <!-- Authentication View (Category A: Unauthenticated Visitor) -->
+        <section id="view-auth" class="page-view auth-card-container">
+          <div class="auth-header-block">
+            <div class="auth-institution-badge">
+              <span>PHYSICS</span>
+              <span class="badge-separator">·</span>
+              <span>BATCH 104</span>
+            </div>
+            <h1 class="auth-title">
+              2<sup>nd</sup> Order Gossip
+            </h1>
+            <p class="auth-description">
+              Private peer review system exclusively for Department of Physics 2024 Batch (104), University of Dhaka. Sign in with your official 2024 batch account.
+            </p>
 
-  body.shake{ animation:shakeAnim 0.4s ease; }
-  @keyframes shakeAnim{
-    0%,100%{ transform:translate(0,0); } 20%{ transform:translate(-6px,3px); }
-    40%{ transform:translate(6px,-3px); } 60%{ transform:translate(-4px,-2px); } 80%{ transform:translate(4px,2px); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    body.shake{ animation:none; }
-    .confetto{ animation:none; display:none; }
-  }
-  footer{ font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--mono-dim); padding-bottom:1rem; }
-</style>
-</head>
-<body>
-<div class="stripe"></div>
-<div id="siren"></div>
-<div id="confetti-root"></div>
+            <div style="margin-top: var(--space-4); padding: 12px 14px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-sm); text-align: left; font-size: 12px; line-height: 1.55; color: var(--text-secondary);">
+              <strong style="color: var(--text-primary); display: block; margin-bottom: 3px;">2024 Batch Exclusive:</strong>
+              Access is strictly restricted to verified students of the <strong>DU Physics 2024 Batch</strong> (<span class="num" style="font-size:11.5px;">s-2024xxxxxx@phy.du.ac.bd</span>). Other batches and personal emails cannot sign in.
+            </div>
+          </div>
 
-<main>
-  <h1>DO NOT PRESS<br><span>THIS BUTTON</span></h1>
-  <p class="sub">We thought about this warning for a long time. Please take it seriously.</p>
+          <div id="auth-error-msg" style="display: none; padding: 10px 14px; background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); color: var(--status-danger-text); border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: var(--space-4);"></div>
 
-  <div class="odometer">
-    <span class="odo-label">INCIDENTS TO DATE</span>
-    <span class="odo-num" id="count">000</span>
-  </div>
+          <!-- Primary: 1-Click Instant Google Sign-In (No email quota limits) -->
+          <div style="margin-top: var(--space-4);">
+            <button type="button" id="btn-google-sign-in" class="btn btn-secondary btn-lg" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; padding: 13px; font-size: 14px; background: var(--bg-surface); border: 1px solid var(--border-medium); box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.15s ease;">
+              <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>Sign in with 2024 Batch Google Account</span>
+            </button>
+            <div style="font-size: 11px; color: var(--text-tertiary); text-align: center; margin-top: 6px; font-family: var(--font-mono);">
+              2024 batch university accounts only · Instant verification
+            </div>
+          </div>
 
-  <button class="big-button" id="bigButton">Press</button>
+          <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text-tertiary); font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;">
+            <div style="flex: 1; height: 1px; background: var(--border-subtle);"></div>
+            <span>or continue with email link</span>
+            <div style="flex: 1; height: 1px; background: var(--border-subtle);"></div>
+          </div>
 
-  <div class="cancel-slot">
-    <button class="cancel-button" id="cancelButton">I've changed my mind</button>
-  </div>
+          <form id="auth-form">
+            <div class="form-group">
+              <label class="form-label" for="auth-email-input">DU Physics 2024 Batch Email</label>
+              <input 
+                type="email" 
+                id="auth-email-input" 
+                class="form-input" 
+                placeholder="s-2024xxxxxx@phy.du.ac.bd" 
+                required 
+                autocomplete="email"
+              />
+              <div class="form-help">Format: <span class="num">s-2024</span> + 6 digits + <span class="num">@phy.du.ac.bd</span></div>
+            </div>
 
-  <div class="terminal" id="log">
-    <div class="terminal-line dim">SYSTEM READY. AWAITING POOR DECISIONS.</div>
-  </div>
-</main>
+            <button type="submit" id="auth-submit-btn" class="btn btn-secondary btn-lg" style="width: 100%;">
+              Send Passwordless Link →
+            </button>
+          </form>
 
-<div class="stripe"></div>
-<footer>facility uptime: questionable</footer>
+          <div id="auth-sent-feedback" style="display: none; margin-top: var(--space-4); padding: 12px 14px; background: var(--status-info-bg); border: 1px solid var(--status-info-border); color: var(--status-info-text); border-radius: var(--radius-sm); font-size: 13px;">
+            <div style="font-weight: 600; margin-bottom: 2px;">Check Your University Email</div>
+            <div>We've sent a secure, single-use authentication link to your inbox.</div>
+          </div>
+        </section>
 
-<script>
-(function(){
-  var $ = function(id){ return document.getElementById(id); };
-  var countEl = $('count'), logEl = $('log'), sirenEl = $('siren'), confettiRoot = $('confetti-root');
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        <!-- Authenticated Application Content (Categories B & C) -->
+        <div id="main-authenticated-content" style="display: none;">
+          <!-- Subtitle Heading -->
+          <div class="overview-header-group">
+            <h1 class="overview-title">
+              A scientifically questionable overview of how does the batch see itself?
+            </h1>
+          </div>
 
-  var count = 0;
-  try {
-    var saved = window.localStorage.getItem('panic-incidents');
-    if (saved !== null) count = parseInt(saved, 10) || 0;
-  } catch(e) {}
+          <!-- Stats Strip -->
+          <div id="stats-strip-container" class="stats-strip">
+            <!-- Populated via ui.js -->
+          </div>
 
-  function renderCount(){
-    countEl.textContent = String(count).padStart(3, '0');
-  }
-  renderCount();
+          <!-- View 1: Student Directory -->
+          <section id="view-directory" class="page-view active">
+            <div class="directory-controls">
+              <div class="search-wrapper">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input 
+                  type="text" 
+                  id="directory-search-input" 
+                  class="search-input" 
+                  placeholder="Search your favourite 🐍 by name or roll..."
+                />
+              </div>
+              <div class="filter-actions">
+                <button type="button" class="btn btn-secondary btn-sm filter-btn active" data-filter="all">All Students</button>
+                <button type="button" class="btn btn-secondary btn-sm filter-btn" data-filter="rated">Rated</button>
+                <button type="button" class="btn btn-secondary btn-sm filter-btn" data-filter="unrated">Unrated</button>
+              </div>
+            </div>
 
-  var messages = [
-    "Well. That happened.",
-    "Nobody tell the supervisor.",
-    "Structural integrity: probably fine.",
-    "Adding this to your permanent record.",
-    "The button did not enjoy that.",
-    "This is exactly why we can't have nice things.",
-    "Alarm noted. Alarm ignored.",
-    "A committee has been formed to discuss this.",
-    "Congratulations, you found out.",
-    "That was not supposed to be possible.",
-    "Please remain calm. This is fine.",
-    "Rebooting sense of judgment...",
-    "The button has filed a complaint.",
-    "Incident logged. Regret: pending."
-  ];
-  var milestones = { 5:"Five incidents. You're a regular now.", 13:"Unlucky number. Should've stopped.", 42:"The answer, apparently, was chaos." };
+            <div id="student-grid-container" class="student-grid">
+              <!-- Populated via ui.js -->
+            </div>
+          </section>
 
-  function log(text, dim){
-    var line = document.createElement('div');
-    line.className = 'terminal-line' + (dim ? ' dim' : '');
-    var t = new Date().toLocaleTimeString();
-    line.textContent = '[' + t + '] ' + text;
-    logEl.appendChild(line);
-    while (logEl.children.length > 8) logEl.removeChild(logEl.firstChild);
-    logEl.scrollTop = logEl.scrollHeight;
-  }
+          <!-- View 2: Rankings Table -->
+          <section id="view-rankings" class="page-view" style="display: none;">
+            <div class="rankings-header-block">
+              <h2 class="rankings-title">
+                Batch Measurement Index
+              </h2>
+              <p class="rankings-subtitle">
+                A scientifically questionable average of what your classmates think of you.
+              </p>
+            </div>
 
-  function shake(){
-    if (reduceMotion) return;
-    document.body.classList.remove('shake');
-    void document.body.offsetWidth;
-    document.body.classList.add('shake');
-    setTimeout(function(){ document.body.classList.remove('shake'); }, 400);
-  }
+            <div id="rankings-container">
+              <!-- Populated via ui.js -->
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
 
-  function sirenFlash(){
-    sirenEl.classList.add('on');
-    setTimeout(function(){ sirenEl.classList.remove('on'); }, 130);
-    setTimeout(function(){ sirenEl.classList.add('on'); }, 220);
-    setTimeout(function(){ sirenEl.classList.remove('on'); }, 340);
-  }
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <a href="#/students" class="nav-link active">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Students</span>
+      </a>
+      <a href="#/rankings" class="nav-link">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Rankings</span>
+      </a>
+    </nav>
 
-  function confetti(n){
-    if (reduceMotion) return;
-    var colors = ['#FFC700', '#E11D2A', '#2451FF', '#141414'];
-    for (var i = 0; i < n; i++){
-      var el = document.createElement('div');
-      el.className = 'confetto';
-      var size = 6 + Math.random() * 6;
-      el.style.width = size + 'px';
-      el.style.height = (size * 0.4) + 'px';
-      el.style.left = (Math.random() * 100) + 'vw';
-      el.style.background = colors[Math.floor(Math.random() * colors.length)];
-      el.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
-      confettiRoot.appendChild(el);
-      (function(node){ setTimeout(function(){ node.remove(); }, 3200); })(el);
-    }
-  }
+    <!-- Footer (100% Full Viewport Width) -->
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <div>Department of Physics · University of Dhaka</div>
+        <div class="footer-credit">
+          Developed by <a href="https://www.facebook.com/fardin.0112" target="_blank" rel="noopener noreferrer">Fardin Hossain</a>
+        </div>
+        <div class="num">104 2<sup>nd</sup> Order Gossip · Privacy & Anonymity Enforced</div>
+      </div>
+    </footer>
 
-  function beep(){
-    try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      var ctx = new Ctx();
-      var osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.type = 'square';
-      osc.connect(gain); gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      osc.frequency.setValueAtTime(660, ctx.currentTime);
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
-      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.24);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.36);
-      osc.onended = function(){ ctx.close(); };
-    } catch(e) {}
-  }
+    <!-- Student Profile Modal -->
+    <div id="profile-modal" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <span class="modal-title">Personal Lab Report 💀</span>
+          <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div id="profile-modal-content" class="modal-body">
+          <!-- Populated via ui.js -->
+        </div>
+      </div>
+    </div>
 
-  $('bigButton').addEventListener('click', function(){
-    count++;
-    try { window.localStorage.setItem('panic-incidents', String(count)); } catch(e) {}
-    renderCount();
-    shake();
-    sirenFlash();
-    confetti(reduceMotion ? 0 : 26);
-    beep();
-    if (milestones[count]) {
-      log(milestones[count]);
-    } else {
-      log(messages[Math.floor(Math.random() * messages.length)]);
-    }
-  });
+    <!-- Rating Submission Modal -->
+    <div id="rating-modal" class="modal-overlay">
+      <div class="modal-container" style="max-width: 520px;">
+        <div class="modal-header">
+          <div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); text-transform: uppercase;">
+              Anonymous Evaluation
+            </div>
+            <div class="modal-title">
+              Rate <span id="rating-modal-target-name"></span>
+            </div>
+            <div id="rating-modal-target-roll" style="font-size: 11.5px; font-family: var(--font-mono); color: var(--text-secondary);"></div>
+          </div>
+          <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.4;">
+            Select a numerical score for each dimension (-1 to +4). Ratings cannot be edited or resubmitted once recorded. Reviewer identity is completely anonymous.
+          </p>
 
-  // Runaway cancel button
-  var cancelBtn = $('cancelButton'), slot = document.querySelector('.cancel-slot');
-  var dodges = 0, dodgeLimit = 6, fleeing = false;
-  var taunts = ["Nope.", "Not today.", "Try again.", "So close.", "Almost!", "Predictable."];
+          <div id="rating-form-fields">
+            <!-- Populated via ui.js -->
+          </div>
 
-  function flee(){
-    var rect = cancelBtn.getBoundingClientRect();
-    if (!fleeing){
-      cancelBtn.style.position = 'fixed';
-      cancelBtn.style.left = rect.left + 'px';
-      cancelBtn.style.top = rect.top + 'px';
-      fleeing = true;
-    }
-    var w = cancelBtn.offsetWidth, h = cancelBtn.offsetHeight;
-    var maxX = window.innerWidth - w - 12, maxY = window.innerHeight - h - 12;
-    var nx = Math.max(12, Math.random() * maxX);
-    var ny = Math.max(12, Math.random() * maxY);
-    cancelBtn.style.left = nx + 'px';
-    cancelBtn.style.top = ny + 'px';
-    dodges++;
-    cancelBtn.textContent = taunts[Math.floor(Math.random() * taunts.length)];
-    if (dodges >= dodgeLimit){
-      cancelBtn.textContent = "Fine. Catch me.";
-    }
-  }
+          <div class="form-group" style="margin-top: var(--space-4);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="form-label" for="rating-review-text">Optional Anonymous Written Review</label>
+              <span id="review-char-count" class="num" style="font-size: 11px; color: var(--text-tertiary);">0 / 500</span>
+            </div>
+            <textarea 
+              id="rating-review-text" 
+              class="form-textarea" 
+              rows="3" 
+              maxlength="500" 
+              placeholder="Write constructive, respectful feedback (max 500 characters)..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-submit-rating" class="btn btn-primary" style="width: 100%;" disabled>
+            Submit Anonymous Rating
+          </button>
+        </div>
+      </div>
+    </div>
 
-  cancelBtn.addEventListener('pointerenter', function(){
-    if (dodges < dodgeLimit && !reduceMotion) flee();
-  });
+    <!-- Review Only Submission Modal (For other batches and review-only submissions) -->
+    <div id="review-modal" class="modal-overlay">
+      <div class="modal-container" style="max-width: 480px;">
+        <div class="modal-header">
+          <div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-text); text-transform: uppercase;">
+              Peer Review Submission
+            </div>
+            <div class="modal-title">
+              Review <span id="review-modal-target-name"></span>
+            </div>
+            <div id="review-modal-target-roll" style="font-size: 11.5px; font-family: var(--font-mono); color: var(--text-secondary);"></div>
+          </div>
+          <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="padding: 10px 12px; background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.4;">
+            Students from your batch can submit constructive anonymous peer reviews. Your review will display your batch tag (e.g., <span id="review-modal-batch-tag" style="font-family: var(--font-mono); font-weight:600;">Batch</span>) without exposing your identity publicly.
+          </div>
 
-  cancelBtn.addEventListener('click', function(){
-    if (dodges < dodgeLimit && !reduceMotion) { flee(); return; }
-    log("Cancellation accepted. Nothing happened anyway.", true);
-    cancelBtn.textContent = "I've changed my mind";
-    cancelBtn.style.position = '';
-    cancelBtn.style.left = '';
-    cancelBtn.style.top = '';
-    fleeing = false;
-    dodges = 0;
-  });
-})();
-</script>
-</body>
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="form-label" for="review-only-text">Written Peer Review</label>
+              <span id="review-only-char-count" class="num" style="font-size: 11px; color: var(--text-tertiary);">0 / 500</span>
+            </div>
+            <textarea 
+              id="review-only-text" 
+              class="form-textarea" 
+              rows="4" 
+              maxlength="500" 
+              placeholder="Write your honest observation, constructive feedback, or words of appreciation (max 500 characters)..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-submit-review-only" class="btn btn-primary" style="width: 100%;" disabled>
+            Submit Anonymous Review
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Details Modal -->
+    <div id="account-modal" class="modal-overlay">
+      <div class="modal-container" style="max-width: 440px;">
+        <div class="modal-header">
+          <span class="modal-title">Account & Device Sessions</span>
+          <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div id="account-modal-body" class="modal-body">
+          <!-- Populated via ui.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- App JavaScript Entry Point -->
+    <script type="module" src="/src/js/app.js"></script>
+  </body>
 </html>
