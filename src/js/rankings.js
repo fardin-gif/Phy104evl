@@ -7,7 +7,7 @@ import { APP_CONFIG } from "./config.js";
 /**
  * Compute sorted rankings for active students based on rating scores.
  * Ranking order is computed using the background weighted formula:
- * (60 * rating_count + rating_value * 40) / 100
+ * (65 * rating_value + 35 * rating_count) / 100
  */
 export function calculateRankings() {
   const { students, aggregates } = getState();
@@ -25,8 +25,8 @@ export function calculateRankings() {
     const hasRating = count > 0 && agg.overallAverage !== null && agg.overallAverage !== undefined && !isNaN(agg.overallAverage);
     const overallAvg = hasRating ? Number(agg.overallAverage) : null;
 
-    // Background formula: (60 * rating count + rating value * 40) / 100
-    const rankingScore = hasRating ? ((60 * count) + (overallAvg * 40)) / 100 : -Infinity;
+    // Background formula: (65 * rating value + 35 * rating count) / 100
+    const rankingScore = hasRating ? ((65 * overallAvg) + (35 * count)) / 100 : -Infinity;
 
     return {
       student,
