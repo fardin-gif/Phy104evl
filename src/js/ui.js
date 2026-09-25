@@ -8,7 +8,7 @@ import { escapeHTML } from "./validation.js";
 import { strings } from "../translations/en.js";
 import { loadStudentReviews, submitReviewOnly, hasUserReviewedStudent } from "./reviews.js";
 import { hasUserRatedStudent, submitRating } from "./ratings.js";
-import { calculateRankings, getMostReviewedPerson } from "./rankings.js";
+import { calculateRankings, getTopReviewedPersons, getMostReviewedPerson } from "./rankings.js";
 import { fetchUserDeviceSessions, revokeDeviceSession } from "./deviceSessions.js";
 import { logoutUser } from "./auth.js";
 import { getFirebaseDb } from "./firebase.js";
@@ -752,9 +752,9 @@ export function renderRankings() {
   if (!container) return;
 
   const ranked = calculateRankings();
-  const mostReviewed = getMostReviewedPerson();
+  const topReviewed = getTopReviewedPersons(3);
 
-  if (ranked.length === 0 && !mostReviewed) {
+  if (ranked.length === 0 && topReviewed.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-title">${strings.rankings.emptyRankings}</div>
@@ -764,49 +764,71 @@ export function renderRankings() {
     return;
   }
 
-  const threshold = APP_CONFIG.MIN_RATINGS_THRESHOLD ?? 3;
+  // Top 3 Most Reviewed Spotlight HTML
+  let spotlightHtml = "";
+  if (topReviewed.length > 0) {
+    const medals = [
+      { rank: 1, icon: "👑", label: "#1 Most Reviewed", ribbonBg: "linear-gradient(90deg, #b45309 0%, #f59e0b 100%)", crownBg: "#f59e0b", rankClass: "rank-1" },
+      { rank: 2, icon: "🥈", label: "#2 Most Reviewed", ribbonBg: "linear-gradient(90deg, #475569 0%, #64748b 100%)", crownBg: "#64748b", rankClass: "rank-2" },
+      { rank: 3, icon: "🥉", label: "#3 Most Reviewed", ribbonBg: "linear-gradient(90deg, #78350f 0%, #b45309 100%)", crownBg: "#b45309", rankClass: "rank-3" }
+    ];
 
-  // Most Reviewed Person Spotlight HTML (Proud, high-focus showcase)
-  let mostReviewedHtml = "";
-  if (mostReviewed && mostReviewed.reviewCount > 0) {
-    const s = mostReviewed.student;
-    const revCount = mostReviewed.reviewCount;
-    mostReviewedHtml = `
-      <div class="most-reviewed-spotlight" id="most-reviewed-spotlight-card" data-student-id="${s.id}" tabindex="0" role="button" aria-label="View spotlight profile of ${escapeHTML(s.name)}">
-        <div class="most-reviewed-badge-ribbon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          Batch Spotlight · Most Reviewed Person
-        </div>
+    const cardsHtml = topReviewed.map((item, idx) => {
+      const s = item.student;
+      const revCount = item.reviewCount;
+      const medal = medals[idx] || medals[2];
 
-        <div class="most-reviewed-layout">
-          <div class="most-reviewed-avatar-wrap">
-            <div class="most-reviewed-avatar">
-              ${
-                s.imageUrl
-                  ? `<img src="${escapeHTML(s.imageUrl)}" alt="${escapeHTML(s.name)}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${getInitials(s.name)}'"/>`
-                  : getInitials(s.name)
-              }
+      return `
+        <div class="spotlight-card ${medal.rankClass}" data-student-id="${s.id}" tabindex="0" role="button" aria-label="View spotlight profile of ${escapeHTML(s.name)}">
+          <div class="most-reviewed-badge-ribbon" style="background: ${medal.ribbonBg};">
+            ${medal.icon} ${medal.label}
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
+            <div class="most-reviewed-avatar-wrap">
+              <div class="most-reviewed-avatar">
+                ${
+                  s.imageUrl
+                    ? `<img src="${escapeHTML(s.imageUrl)}" alt="${escapeHTML(s.name)}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${getInitials(s.name)}'"/>`
+                    : getInitials(s.name)
+                }
+              </div>
+              <div class="most-reviewed-crown" style="background: ${medal.crownBg};" title="${medal.label}">${medal.icon}</div>
             </div>
-            <div class="most-reviewed-crown" title="Classmate Consensus">👑</div>
-          </div>
 
-          <div class="most-reviewed-details">
-            <div class="most-reviewed-name">${escapeHTML(s.name)}</div>
-            <div class="most-reviewed-roll">Physics Dept · Roll ${escapeHTML(s.roll)}</div>
-            <div>
-              <span class="most-reviewed-stat-pill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                ${revCount} ${revCount === 1 ? "Peer Review Received" : "Peer Reviews Received"}
-              </span>
+            <div class="most-reviewed-details" style="min-width: 0;">
+              <div class="most-reviewed-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.name)}</div>
+              <div class="most-reviewed-roll">Roll ${escapeHTML(s.roll)}</div>
+              <div>
+                <span class="most-reviewed-stat-pill" style="font-size: 11.5px; padding: 2px 8px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  ${revCount} ${revCount === 1 ? "Peer Review" : "Peer Reviews"}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div class="most-reviewed-cta">
-            <span>Read Peer Observations</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="spotlight-card-footer">
+            <span style="font-size: 11.5px; color: var(--text-tertiary); font-family: var(--font-mono);">Classmate Consensus</span>
+            <div class="most-reviewed-cta" style="font-size: 12px;">
+              <span>Read Observations</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
           </div>
         </div>
-      </div>
+      `;
+    }).join("");
+
+    spotlightHtml = `
+      <section class="spotlight-section">
+        <div class="spotlight-section-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span>Batch Spotlight · Top 3 Most Reviewed</span>
+        </div>
+        <div class="spotlight-grid">
+          ${cardsHtml}
+        </div>
+      </section>
     `;
   }
 
@@ -863,7 +885,7 @@ export function renderRankings() {
     .join("");
 
   container.innerHTML = `
-    ${mostReviewedHtml}
+    ${spotlightHtml}
 
     <div class="rankings-table-wrapper">
       <table class="rankings-table">
@@ -882,18 +904,24 @@ export function renderRankings() {
     </div>
   `;
 
-  // Attach click listener to Most Reviewed Spotlight card
-  const spotlightCard = document.getElementById("most-reviewed-spotlight-card");
-  if (spotlightCard) {
-    spotlightCard.addEventListener("click", () => {
-      const studentId = spotlightCard.getAttribute("data-student-id");
+  // Attach click listeners to all Top 3 Spotlight cards
+  container.querySelectorAll(".spotlight-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const studentId = card.getAttribute("data-student-id");
       const { students } = getState();
       const student = students.find((s) => s.id === studentId);
       if (student) {
         openStudentProfile(student);
       }
     });
-  }
+
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        card.click();
+      }
+    });
+  });
 
   // Attach row click listeners
   container.querySelectorAll("tbody tr").forEach((row) => {
