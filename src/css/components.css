@@ -916,6 +916,100 @@
   margin-left: auto;
 }
 
+/* Top 3 Spotlight Grid System */
+.spotlight-section {
+  margin-bottom: var(--space-6);
+}
+
+.spotlight-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+}
+
+.spotlight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.spotlight-card {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: 0 3px 14px -2px rgba(30, 58, 138, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.spotlight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(30, 58, 138, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+.spotlight-card.rank-1 {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.07) 0%, rgba(30, 58, 138, 0.04) 100%);
+}
+
+.spotlight-card.rank-2 {
+  border-color: rgba(148, 163, 184, 0.5);
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.08) 0%, rgba(30, 58, 138, 0.03) 100%);
+}
+
+.spotlight-card.rank-3 {
+  border-color: rgba(217, 119, 6, 0.35);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.06) 0%, rgba(245, 158, 11, 0.03) 100%);
+}
+
+.spotlight-card .most-reviewed-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 18px;
+}
+
+.spotlight-card .most-reviewed-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.spotlight-card .most-reviewed-crown {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  top: -8px;
+  right: -6px;
+}
+
+.spotlight-card .most-reviewed-badge-ribbon {
+  font-size: 10.5px;
+  padding: 3px 10px;
+  margin-bottom: var(--space-3);
+  align-self: flex-start;
+}
+
+.spotlight-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* --------------------------------------------------------------------------
    10. Star-Based Rating Interactive System
    (Gamified but Sophisticated)
