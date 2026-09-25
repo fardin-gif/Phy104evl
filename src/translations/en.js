@@ -21,7 +21,7 @@ export const strings = {
     linkSentTitle: "Check Your University Email",
     linkSentDesc: "A secure passwordless sign-in link has been sent to your university inbox.",
     completingSignIn: "Verifying sign-in link with Firebase...",
-    invalidEmailError: "Invalid email format. Must match s- followed by 10 digits @phy.du.ac.bd",
+    invalidEmailError: "Access restricted: Only verified DU Physics 2024 batch students (s-2024xxxxxx@phy.du.ac.bd) are permitted to sign in.",
     signOutBtn: "Sign Out",
   },
   stats: {
