@@ -137,28 +137,24 @@ export function renderStats() {
 
   container.innerHTML = `
     <div class="stat-box">
-      <div class="stat-box-index">01 / STUDENTS</div>
+      <div class="stat-box-index">STUDENTS</div>
       <div class="stat-number">${totalStudents}</div>
       <div class="stat-label">${strings.stats.students}</div>
-      <div class="stat-subtext">Active Batch Directory</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">02 / EVALUATIONS</div>
+      <div class="stat-box-index">EVALUATIONS</div>
       <div class="stat-number">${totalRatings}</div>
       <div class="stat-label">${strings.stats.ratings}</div>
-      <div class="stat-subtext">Anonymous Peer Ratings</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">03 / REVIEWS</div>
+      <div class="stat-box-index">REVIEWS</div>
       <div class="stat-number">${totalReviews}</div>
       <div class="stat-label">${strings.stats.reviews}</div>
-      <div class="stat-subtext">Visible Written Notes</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box-index">04 / CONSENSUS</div>
+      <div class="stat-box-index">CONSENSUS</div>
       <div class="stat-number">${participationRate}%</div>
       <div class="stat-label">${strings.stats.participation}</div>
-      <div class="stat-subtext">Batch Consensus Metric</div>
     </div>
   `;
 }
@@ -802,7 +798,7 @@ export function renderRankings() {
               <div>
                 <span class="most-reviewed-stat-pill" style="font-size: 11.5px; padding: 2px 8px;">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  ${revCount} ${revCount === 1 ? "Peer Review" : "Peer Reviews"}
+                  ${revCount} ${revCount === 1 ? "Review" : "Reviews"}
                 </span>
               </div>
             </div>
