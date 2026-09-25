@@ -12,13 +12,14 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase.js";
 import { APP_CONFIG, isFirebaseConfigured } from "./config.js";
-import { isValidDepartmentEmail } from "./validation.js";
+import { isValidDepartmentEmail, isBatch2024Student } from "./validation.js";
 import { resolveUserPermissions } from "./authorization.js";
 import { setState, getState } from "./state.js";
 import { syncDeviceSession } from "./deviceSessions.js";
 
 /**
  * Sign in using University Google Account (Zero email quota limits, 1-click verification)
+ * Strictly restricted to verified 2024 batch students (s-2024xxxxxx@phy.du.ac.bd)
  */
 export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
@@ -38,15 +39,15 @@ export async function signInWithGoogle() {
 
   if (user && user.email) {
     const normalizedEmail = user.email.trim().toLowerCase();
-    if (!isValidDepartmentEmail(normalizedEmail)) {
-      // Instantly delete the unauthorized personal user from Firebase Auth so it doesn't linger in Firebase Console
+    if (!isBatch2024Student(normalizedEmail)) {
+      // Instantly delete unauthorized user from Firebase Auth so it doesn't linger in Firebase Console
       try {
         await user.delete();
       } catch (delErr) {
         console.warn("Could not delete unauthorized user:", delErr);
       }
       await signOut(auth);
-      throw new Error(`Access restricted: "${normalizedEmail}" is a personal or unauthorized account. Only official Physics Department student emails (s-xxxxxxxxxx@phy.du.ac.bd) are allowed.`);
+      throw new Error(`Access restricted: "${normalizedEmail}" is not permitted. Only verified DU Physics 2024 batch students (s-2024xxxxxx@phy.du.ac.bd) are allowed to sign in.`);
     }
   }
 
@@ -54,13 +55,14 @@ export async function signInWithGoogle() {
 }
 
 /**
- * Send passwordless authentication email link via Firebase Auth (Option 1)
+ * Send passwordless authentication email link via Firebase Auth
+ * Strictly restricted to verified 2024 batch students (s-2024xxxxxx@phy.du.ac.bd)
  */
 export async function sendEmailLinkAuth(email) {
   const normalizedEmail = email.trim().toLowerCase();
 
-  if (!isValidDepartmentEmail(normalizedEmail)) {
-    throw new Error("Only official Physics Department emails are permitted (s-xxxxxxxxxx@phy.du.ac.bd).");
+  if (!isBatch2024Student(normalizedEmail)) {
+    throw new Error("Access restricted: Only verified DU Physics 2024 batch students (s-2024xxxxxx@phy.du.ac.bd) can sign in.");
   }
 
   // Standard Firebase Client-side Email Link Authentication (Option 1)
@@ -96,11 +98,11 @@ export async function handleEmailLinkCallback() {
   if (isSignInWithEmailLink(auth, window.location.href)) {
     let email = localStorage.getItem(APP_CONFIG.STORAGE_KEY_EMAIL_FOR_SIGN_IN);
     if (!email) {
-      email = window.prompt("Please confirm your official university email for verification:");
+      email = window.prompt("Please confirm your official 2024 batch university email for verification:");
     }
 
-    if (!email || !isValidDepartmentEmail(email)) {
-      throw new Error("A valid University Physics email is required to complete authentication.");
+    if (!email || !isBatch2024Student(email)) {
+      throw new Error("A valid DU Physics 2024 batch email (s-2024xxxxxx@phy.du.ac.bd) is required to complete authentication.");
     }
 
     const result = await signInWithEmailLink(auth, email, window.location.href);
@@ -139,9 +141,9 @@ export function initAuthListener(onUserChanged) {
     return onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && firebaseUser.email) {
         const email = (firebaseUser.email || "").trim().toLowerCase();
-        // Enforce valid physics department email strictly
-        if (!isValidDepartmentEmail(email)) {
-          console.warn("Unauthorized non-department account detected in auth listener:", email);
+        // Enforce 2024 batch email strictly
+        if (!isBatch2024Student(email)) {
+          console.warn("Non-2024 batch account detected in auth listener, purging session:", email);
           try {
             await firebaseUser.delete();
           } catch (e) {
