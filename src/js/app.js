@@ -21,7 +21,7 @@ import {
 } from "./ui.js";
 import { subscribe, getState, setState } from "./state.js";
 import { debounce, applyTheme } from "./utils.js";
-import { isValidDepartmentEmail } from "./validation.js";
+import { isBatch2024Student } from "./validation.js";
 import { initRouter } from "./router.js";
 import { strings } from "../translations/en.js";
 
@@ -137,7 +137,7 @@ function setupEventListeners() {
       e.preventDefault();
       const email = emailInput.value.trim().toLowerCase();
 
-      if (!isValidDepartmentEmail(email)) {
+      if (!isBatch2024Student(email)) {
         if (authErrorEl) {
           authErrorEl.textContent = strings.auth.invalidEmailError;
           authErrorEl.style.display = "block";
